@@ -1,0 +1,6 @@
+resources:
+  # - filesystem-test.yaml
+  # - object-test.yaml
+  # - pool-test.yaml
+  - service-monitors.yaml
+  - service-rook-ceph-mgr-dashboard-nodeport.yaml

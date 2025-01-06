@@ -1,0 +1,173 @@
+# All values below are taken from the CephCluster CRD
+# -- Cluster configuration.
+# @default -- See [below](#ceph-cluster-spec)
+cephClusterSpec:
+  network:
+    provider: host
+  dataDirHostPath: /mnt/vda1/var/lib/rook # /var/lib/rook
+  resources:
+  cephVersion:
+    # image: quay.io/ceph/ceph:v19
+    allowUnsupported: true
+  #mon:
+    #  count: 1
+    #  allowMultiplePerNode: true
+  mgr:
+    #  count: 1
+    #  allowMultiplePerNode: true
+    modules:
+      - name: rook
+        enabled: true
+  dashboard:
+    enabled: true
+    port: 7000
+    ssl: false
+  crashCollector:
+    disable: true
+  storage:
+    useAllNodes: true
+    useAllDevices: true
+    allowDeviceClassUpdate: true
+    allowOsdCrushWeightUpdate: false
+    #deviceFilter:
+    #config:
+    #  deviceClass: testclass
+  monitoring:
+    enabled: true
+  healthCheck:
+    daemonHealth:
+      mon:
+        interval: 45s
+        timeout: 600s
+  priorityClassNames:
+    all: system-node-critical
+    mgr: system-cluster-critical
+  disruptionManagement:
+    managePodBudgets: true
+  cephConfig:
+    global:
+      osd_pool_default_size: "1"
+      mon_warn_on_pool_no_redundancy: "false"
+      bdev_flock_retry: "20"
+      bluefs_buffered_io: "false"
+      mon_data_avail_warn: "10"
+
+      # -- A list of CephBlockPool configurations to deploy
+# @default -- See [below](#ceph-block-pools)
+cephBlockPools: # {}
+  - name: builtin-mgr
+    storageClass:
+      enabled: false
+    spec:
+      name: .mgr
+      replicated:
+        size: 1
+        requireSafeReplicaSize: false
+
+# -- A list of CephBlockPool configurations to deploy
+# @default -- See [below](#ceph-block-pools)
+cephBlockPools: # {}
+  - name: builtin-mgr
+    storageClass:
+      enabled: false
+    spec:
+      name: .mgr
+      replicated:
+        size: 1
+        requireSafeReplicaSize: false
+        apiVersion: ceph.rook.io/v1
+  - name: replicapool
+    storageClass:
+      enabled: false
+    spec:
+      failureDomain: osd
+      replicated:
+        size: 1
+
+# -- A list of CephFileSystem configurations to deploy
+# @default -- See [below](#ceph-file-systems)
+cephFileSystems:
+  - name: myfs # ceph-filesystem
+    # see https://github.com/rook/rook/blob/v1.15.6/Documentation/CRDs/Shared-Filesystem/ceph-filesystem-crd.md#filesystem-settings for available configuration
+    spec:
+      metadataPool:
+        replicated:
+          size: 1
+          requireSafeReplicaSize: false
+      dataPools:
+        - failureDomain: osd # host
+          replicated:
+            size: 1
+          requireSafeReplicaSize: false
+          # Optional and highly recommended, 'data0' by default, see https://github.com/rook/rook/blob/v1.15.6/Documentation/CRDs/Shared-Filesystem/ceph-filesystem-crd.md#pools
+          name: replicated
+      preserveFilesystemOnDelete: false
+      metadataServer:
+        activeCount: 1
+        activeStandby: true
+        #resources:
+        #  limits:
+        #    memory: "4Gi"
+        #  requests:
+        #    cpu: "1000m"
+        #    memory: "4Gi"
+        # priorityClassName: system-cluster-critical
+    storageClass:
+      enabled: false
+
+# -- A list of CephObjectStore configurations to deploy
+# @default -- See [below](#ceph-object-stores)
+
+cephObjectStores:
+  - name: my-store # ceph-objectstore
+    # see https://github.com/rook/rook/blob/v1.15.6/Documentation/CRDs/Object-Storage/ceph-object-store-crd.md#object-store-settings for available configuration
+    spec:
+      metadataPool:
+        # failureDomain: host
+        replicated:
+          size: 1
+      dataPool:
+        #  failureDomain: host
+        replicated:
+          size: 1
+      #  erasureCoded:
+      #   dataChunks: 2
+      #    codingChunks: 1
+      preservePoolsOnDelete: true
+      gateway:
+        port: 80
+        #resources:
+        #  limits:
+        #    memory: "2Gi"
+        #  requests:
+        #    cpu: "1000m"
+        #    memory: "1Gi"
+        # securePort: 443
+        # sslCertificateRef:
+        instances: 1
+        # priorityClassName: system-cluster-critical
+    storageClass:
+      enabled: false
+    ingress:
+      # Enable an ingress for the ceph-objectstore
+      enabled: false
+      # annotations: {}
+      # host:
+      #   name: objectstore.example.com
+      #   path: /
+      # tls:
+      # - hosts:
+      #     - objectstore.example.com
+      #   secretName: ceph-objectstore-tls
+      # ingressClassName: nginx
+
+monitoring:
+  # -- Enable Prometheus integration, will also create necessary RBAC rules to allow Operator to create ServiceMonitors.
+  # Monitoring requires Prometheus to be pre-installed
+  enabled: true
+  # -- Whether to create the Prometheus rules for Ceph alerts
+  createPrometheusRules: true
+
+toolbox:
+  # -- Enable Ceph debugging pod deployment. See [toolbox](../Troubleshooting/ceph-toolbox.md)
+  enabled: true

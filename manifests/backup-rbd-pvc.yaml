@@ -1,0 +1,14 @@
+apiVersion: velero.io/v1
+kind: Backup
+metadata:
+  name: rbd-pvc 
+  namespace: velero
+spec:
+  includedNamespaces:
+    - default 
+  includedResources:
+    - persistentvolumeclaims
+    - persistentvolumes
+      #labelSelector:
+      #  matchLabels:
+      #    backup: true

@@ -1,0 +1,46 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: ob
+spec:
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - image: minio/warp:latest
+          args:
+            - mixed
+            - --host=$(BUCKET_HOST):$(BUCKET_PORT)
+            - --access-key=$(AWS_ACCESS_KEY_ID)
+            - --secret-key=$(AWS_SECRET_ACCESS_KEY)
+            - --bucket=$(BUCKET_NAME)
+            - --autoterm
+            - --tls=false
+          #  - --debug
+          name: warp
+          env:
+            - name: BUCKET_NAME
+              valueFrom:
+                configMapKeyRef:
+                  name: my-store
+                  key: BUCKET_NAME
+            - name: BUCKET_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: my-store
+                  key: BUCKET_HOST
+            - name: BUCKET_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: my-store
+                  key: BUCKET_PORT
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: my-store
+                  key: AWS_ACCESS_KEY_ID
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: my-store
+                  key: AWS_SECRET_ACCESS_KEY

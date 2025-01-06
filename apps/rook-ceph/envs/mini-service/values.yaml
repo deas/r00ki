@@ -1,0 +1,32 @@
+# Default values for a single rook-ceph cluster
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+# -- Namespace of the main rook operator
+operatorNamespace: rook-ceph
+
+# -- The metadata.name of the CephCluster CR
+# @default -- The same as the namespace
+clusterName:
+
+# -- Optional override of the target kubernetes version
+kubeVersion:
+
+# -- Cluster ceph.conf override
+configOverride:
+# configOverride: |
+#   [global]
+#   mon_allow_pool_delete = true
+#   osd_pool_default_size = 3
+#   osd_pool_default_min_size = 2
+
+resources:
+
+csi:
+  enableRbdDriver: false
+  enableCephfsDriver: false
+
+monitoring:
+  # -- Enable Prometheus integration, will also create necessary RBAC rules to allow Operator to create ServiceMonitors.
+  # Monitoring requires Prometheus to be pre-installed
+  enabled: true

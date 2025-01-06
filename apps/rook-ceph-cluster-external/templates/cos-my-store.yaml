@@ -1,0 +1,15 @@
+{{- if .Values.externalRgwEndpoint }}
+apiVersion: ceph.rook.io/v1
+kind: CephObjectStore
+metadata:
+  name: my-store
+  namespace: rook-ceph # namespace:cluster
+spec:
+  gateway:
+    # The port on which **ALL** the gateway(s) are listening on.
+    # Passing a single IP from a load-balancer is also valid.
+    port: 80
+    externalRgwEndpoints:
+      - ip: {{ .Values.externalRgwEndpoint }}
+        # hostname: ceph-service
+{{- end }}

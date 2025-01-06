@@ -1,0 +1,170 @@
+repositories:
+- name: rook-release
+  url: https://charts.rook.io/release 
+- name: vmware-tanzu
+  url: https://vmware-tanzu.github.io/helm-charts
+- name: prometheus-community
+  url: https://prometheus-community.github.io/helm-charts
+
+# https://github.com/roboll/helmfile/issues/1247
+environments:
+  mini-aio:
+    values:
+    - velero:
+        enabled: true
+    - rook-ceph-cluster-external:
+        enabled: true
+        needs: "rook-ceph/rook-ceph-service"
+    - rook-ceph-service:
+        enabled: true
+    - kube-prometheus-stack:
+        values: envs/default/values.yaml
+  mini-consumer:
+    values:
+    - velero:
+        enabled: true
+    - rook-ceph-cluster-external:
+        enabled: true
+        needs: "rook-ceph/rook-ceph-cluster" 
+    - rook-ceph-service:
+        enabled: false
+    - kube-prometheus-stack:
+        values: envs/default/values.yaml
+  mini-service:
+    values:
+    - velero:
+        enabled: false
+    - rook-ceph-cluster-external:
+        enabled: false
+    - rook-ceph-service:
+        enabled: true
+    - kube-prometheus-stack:
+        values: envs/default/values.yaml
+  openshift-aio:
+    values:
+    - velero:
+        enabled: true
+    - rook-ceph-cluster-external:
+        enabled: true
+        needs: "rook-ceph/rook-ceph-service"
+    - rook-ceph-service:
+        enabled: true
+    - kube-prometheus-stack:
+        values: envs/openshift/values.yaml
+  openshift-consumer:
+    values:
+    - velero:
+        enabled: true
+    - rook-ceph-cluster-external:
+        enabled: true
+        needs: "rook-ceph/rook-ceph-cluster" 
+    - rook-ceph-service:
+        enabled: false
+    - kube-prometheus-stack:
+        values: envs/openshift/values.yaml
+  openshift-service:
+    values:
+    - velero:
+        enabled: false
+    - rook-ceph-cluster-external:
+        enabled: false
+    - rook-ceph-service:
+        enabled: true
+    - kube-prometheus-stack:
+        values: envs/openshift/values.yaml
+    #  - rook-ceph: rook-ceph/envs/mini-aio/dev/values.yaml
+    #  - rook-ceph-cluster: rook-ceph-cluster/envs/mini-aio/dev/values.yaml
+    #  - kube-prometheus-stack: kube-prometheus-stack/envs/mini-aio/dev/values.yaml
+    #  - rook-ceph-dashboards: rook-ceph-dashboards/values.yaml
+    #  - velero: velero/values.yaml
+#
+# Advanced Configuration: Layering
+#
+# Helmfile merges all the "base" state files and this state file before processing.
+#
+# Assuming this state file is named `helmfile.yaml`, all the files are merged in the order of:
+#   environments.yaml <- defaults.yaml <- templates.yaml <- helmfile.yaml
+#bases:
+#- environments.yaml
+#- defaults.yaml
+#- templates.yaml
+
+releases:
+  # - <<: *nginx
+  # - <<: *rook-ceph-dashboards
+  - name: rook-ceph
+    chart: rook-release/rook-ceph
+    version: ~1.16.0
+    namespace: rook-ceph 
+    createNamespace: true
+    values:
+    #- apps/{{`{{ .Release.Name }}`}}/values.yaml
+    - apps/{{`{{ .Release.Name }}`}}/envs/{{`{{ .Environment.Name }}`}}/values.yaml
+    needs:
+    - rook-ceph/kube-prometheus-stack
+  - name: rook-ceph-cluster
+    chart: rook-release/rook-ceph-cluster
+    version: ~1.16.0
+    namespace: rook-ceph
+    values:
+    #- apps/{{`{{ .Release.Name }}`}}/values.yaml
+    - apps/{{`{{ .Release.Name }}`}}/envs/{{`{{ .Environment.Name }}`}}/values.yaml
+    needs:
+    - rook-ceph/rook-ceph
+  #- name: rook-ceph-export
+  #  chart: ./apps/rook-ceph-export
+  #  namespace: rook-ceph
+  #  needs:
+  #  - rook-ceph/rook-ceph-cluster
+{{- if (index .Environment.Values "rook-ceph-cluster-external").enabled }}
+  - name: rook-ceph-cluster-external
+    chart: ./apps/rook-ceph-cluster-external
+    namespace: rook-ceph
+    values:
+    - apps/{{`{{ .Release.Name }}`}}/envs/{{`{{ .Environment.Name }}`}}/values.yaml
+    needs:
+    - {{ (index .Environment.Values "rook-ceph-cluster-external").needs }}
+    hooks:
+    # prepare preapply presync preuninstall postuninstall postsync cleanup
+    - events: ["postsync"]
+      showlogs: false
+      command: "sh"
+      args: ["-c", "./tools/prepare-velero.sh"]
+{{- end}}
+{{- if (index .Environment.Values "rook-ceph-service").enabled }}
+  - name: rook-ceph-service
+    chart: ./apps/rook-ceph-service
+    namespace: rook-ceph
+    needs:
+    - rook-ceph/rook-ceph-cluster
+    hooks:
+    # prepare preapply presync preuninstall postuninstall postsync cleanup
+    - events: ["postsync"]
+      showlogs: false
+      # TODO:: Wait for resources, run ./setup-rbd.sh or ./export-config.sh (aio or external)
+      # command: "echo"
+      command: "sh" # prepare-consumer.sh"
+      args: ["-c", "./tools/prepare-consumer.sh {{.Environment.Name}}"]
+      # args: ["{{`{{.Environment.Name}}`}}", "{{`{{.Release.Name}}`}}", "{{`{{.HelmfileCommand}}`}}"]
+{{- end}}
+  - name: rook-ceph-dashboards
+    chart: ./apps/rook-ceph-dashboards
+    namespace: rook-ceph
+    values:
+    - apps/{{`{{ .Release.Name }}`}}/values.yaml
+{{- if .Environment.Values.velero.enabled }}
+  - name: velero
+    chart: vmware-tanzu/velero
+    namespace: velero
+    values:
+    - apps/{{`{{ .Release.Name }}`}}/values.yaml
+    - apps/{{`{{ .Release.Name }}`}}/values-dynamic.yaml
+    needs:
+    - rook-ceph/rook-ceph-cluster-external
+{{- end }}
+  - name: kube-prometheus-stack
+    chart: prometheus-community/kube-prometheus-stack
+    version: ~67.4.0
+    namespace: rook-ceph
+    values:
+    - apps/{{`{{ .Release.Name }}`}}/{{ (index .Environment.Values "kube-prometheus-stack").values }}

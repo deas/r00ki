@@ -1,0 +1,3 @@
+{{- if .Values.externalRgwEndpoint }}
+{{ .Files.Get "files/manifest-dynamic.yaml" }}
+{{- end}}

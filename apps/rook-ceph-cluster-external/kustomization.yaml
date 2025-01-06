@@ -1,0 +1,6 @@
+resources:
+  # - cos-my-store.yaml
+  # - obc-my-store.yaml
+  #  - snapshotclass-cephfs.yaml
+  #  - snapshotclass-ceph-rbd.yaml
+  # - storageclass-my-store.yaml
