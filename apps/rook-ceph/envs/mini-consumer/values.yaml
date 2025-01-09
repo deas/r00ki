@@ -22,6 +22,10 @@ configOverride:
 
 resources:
 
+# -- Global log level for the operator.
+# Options: `ERROR`, `WARNING`, `INFO`, `DEBUG`
+logLevel: DEBUG
+
 monitoring:
   # -- Enable monitoring. Requires Prometheus to be pre-installed.
   # Enabling will also create RBAC rules to allow Operator to create ServiceMonitors

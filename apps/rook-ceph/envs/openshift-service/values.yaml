@@ -26,6 +26,10 @@ csi:
   enableRbdDriver: false
   enableCephfsDriver: false
 
+# -- Global log level for the operator.
+# Options: `ERROR`, `WARNING`, `INFO`, `DEBUG`
+logLevel: DEBUG
+
 monitoring:
   # -- Enable Prometheus integration, will also create necessary RBAC rules to allow Operator to create ServiceMonitors.
   # Monitoring requires Prometheus to be pre-installed

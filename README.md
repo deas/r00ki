@@ -85,9 +85,17 @@ Kubernetes Storage. Rook. The Boss Fight. Still a bit messy. But it works. Most 
 
 There must be a reason [Red Hat OpenShift Data Foundation](https://docs.redhat.com/en/documentation/red_hat_openshift_data_foundation) is expensive ...
 
-Aiming at a fast development cycle, we want an awesome local Dev Experience.
+Now seriously: Storage is one of the most critical bits in general. Many workloads are stateful, and not every Kubernetes infrastructure solves the problem nicely. That was where I found myself a few times in the past. We we given virtual machines with basic disks attached - VMware VMDKs in my case. Customers were in demand of ... you name it - everything: RWX-/RWO Volumes, S3, Snapshots, Backup/Recovery - superfast and always available. The code reflects these roots.
 
 Disclaimer: We started by borrowing proven things from the Rook project - adapted them as we went along.
+
+Here is a demo creating a Minikube cluster and running a few tests, specifically:
+
+```sh
+ make apply-r00ki-aio test-csi-io test-csi-snapshot test-velero
+```
+
+![Demo](./assets/demo.gif)
 
 ### Goals
 
@@ -172,6 +180,11 @@ We want lifecycle of things (Create/Destroy) to be as fast as possible. We ship 
 - Improve Observability / Include Alerts
 - Smoketests in CI
 - Cleanup bits aroud `TODO` tags sprinkled across the code
+- Use LVM instead of raw disks/partitions?
+- Performance: How/When do multiple disks per node make sense?
+- Exercise Upgrade/Recreate and Desaster Recovery + build tests
+- Proper cascaded removal of `CephCluster`?
+- Finding-/cleaning up orphans (volumes or buckets)
 - Go deeper with `nix`/`devenv` - maybe even replace `mise`
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>

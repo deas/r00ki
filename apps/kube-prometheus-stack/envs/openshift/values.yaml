@@ -3,7 +3,7 @@ crds:
 prometheusOperator:
   enabled: false
 alertmanager:
-  enabled: true
+  enabled: false
 coreDns:
   enabled: false
 defaultRules:
@@ -29,7 +29,7 @@ kubernetesServiceMonitors:
 nodeExporter:
   enabled: false
 prometheus:
-  enabled: true
+  enabled: false
   #prometheusSpec:
   #  serviceMonitorSelectorNilUsesHelmValues: false
   #  podMonitorSelectorNilUsesHelmValues: false

@@ -3,7 +3,8 @@
 set -e
 
 NS="${NS:=velero}"
-TOOLS_DIR="${TOOLS_DIR:=.}"
+TOOLS_DIR="$(cd "$(dirname "$0")" && pwd)"
+# TOOLS_DIR="${TOOLS_DIR:=.}"
 # ENV="${ENV:=local}"
 
 # Need to make sure the secret/config map exists before we setup s3 environment

@@ -4,7 +4,7 @@
 cephClusterSpec:
   #network:
   #  provider: host
-  dataDirHostPath: /mnt/vda1/var/lib/rook # /var/lib/rook
+  dataDirHostPath: /var/lib/rook # /var/lib/rook
   resources:
   cephVersion:
     # image: quay.io/ceph/ceph:v19
@@ -25,15 +25,16 @@ cephClusterSpec:
   crashCollector:
     disable: true
   storage:
-    useAllNodes: true
-    useAllDevices: true
     allowDeviceClassUpdate: true
     allowOsdCrushWeightUpdate: false
+    useAllNodes: true
+    useAllDevices: false
+    devicePathFilter: /dev/disk/by.*label/r00ki_bluestore-.*
     #deviceFilter:
     #config:
     #  deviceClass: testclass
   monitoring:
-    enabled: false
+    enabled: true
   healthCheck:
     daemonHealth:
       mon:
@@ -60,10 +61,10 @@ cephBlockPools: # {}
       enabled: false
     spec:
       name: .mgr
-      #replicated:
-      #  size: 1
-      #  requireSafeReplicaSize: false
-      #  apiVersion: ceph.rook.io/v1
+      replicated:
+        size: 3
+        # requireSafeReplicaSize: false
+        apiVersion: ceph.rook.io/v1
   - name: replicapool
     storageClass:
       enabled: true
@@ -118,9 +119,9 @@ cephBlockPools: # {}
         csi.storage.k8s.io/fstype: ext4
 
     spec:
-      failureDomain: osd
-      #replicated:
-      #  size: 1
+      # failureDomain: osd
+      replicated:
+        size: 3
 
 # -- A list of CephFileSystem configurations to deploy
 # @default -- See [below](#ceph-file-systems)
@@ -128,20 +129,20 @@ cephFileSystems:
   - name: myfs # ceph-filesystem
     # see https://github.com/rook/rook/blob/v1.15.6/Documentation/CRDs/Shared-Filesystem/ceph-filesystem-crd.md#filesystem-settings for available configuration
     spec:
-      #metadataPool:
-      #  replicated:
-      #    size: 1
-      #    requireSafeReplicaSize: false
+      metadataPool:
+        replicated:
+          size: 3
+          # requireSafeReplicaSize: false
       dataPools:
-        - failureDomain: osd # host
-          #replicated:
-          #  size: 1
+        - # failureDomain: osd # host
+          replicated:
+            size: 3
           #requireSafeReplicaSize: false
           # Optional and highly recommended, 'data0' by default, see https://github.com/rook/rook/blob/v1.15.6/Documentation/CRDs/Shared-Filesystem/ceph-filesystem-crd.md#pools
           name: replicated
       preserveFilesystemOnDelete: false
       metadataServer:
-        #activeCount: 1
+        activeCount: 1
         activeStandby: true
         #resources:
         #  limits:
@@ -183,17 +184,17 @@ cephObjectStores:
   - name: my-store # ceph-objectstore
     # see https://github.com/rook/rook/blob/v1.15.6/Documentation/CRDs/Object-Storage/ceph-object-store-crd.md#object-store-settings for available configuration
     spec:
-      #metadataPool:
-      #  # failureDomain: host
-      #  replicated:
-      #    size: 1
-      #dataPool:
-      #  #  failureDomain: host
-      #  replicated:
-      #    size: 1
-      #  erasureCoded:
-      #   dataChunks: 2
-      #    codingChunks: 1
+      metadataPool:
+        #  # failureDomain: host
+        replicated:
+          size: 3
+      dataPool:
+        #  failureDomain: host
+        replicated:
+          size: 3
+        #erasureCoded:
+        #  dataChunks: 2
+        #  codingChunks: 1
       preservePoolsOnDelete: true
       gateway:
         port: 80

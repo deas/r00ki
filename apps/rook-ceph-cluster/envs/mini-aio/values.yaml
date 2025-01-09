@@ -26,9 +26,11 @@ cephClusterSpec:
     disable: true
   storage:
     useAllNodes: true
-    useAllDevices: true
+    #useAllDevices: true
     allowDeviceClassUpdate: true
     allowOsdCrushWeightUpdate: false
+    #useAllDevices: false
+    #devicePathFilter: /dev/disk/by-partlabel/rook-.*
     #deviceFilter:
     #config:
     #  deviceClass: testclass
