@@ -9,7 +9,7 @@ coreDns:
 defaultRules:
   create: false
 grafana:
-  enabled: true
+  enabled: false
 kubeApiServer:
   enabled: false
 kubeControllerManager:

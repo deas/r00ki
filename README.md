@@ -89,13 +89,17 @@ Now seriously: Storage is one of the most critical bits in general. Many workloa
 
 Disclaimer: We started by borrowing proven things from the Rook project - adapted them as we went along.
 
-Here is a demo creating a Minikube cluster and running a few tests, specifically:
+<!-- https://docs.github.com/en/get-started/writing-on-github/working-with-advanced-formatting/organizing-information-with-collapsed-sections -->
+<details>
+<summary>Demo creating a Minikube cluster and running a few tests</summary>
 
 ```sh
  make apply-r00ki-aio test-csi-io test-csi-snapshot test-velero
 ```
 
 ![Demo](./assets/demo.gif)
+
+</details>
 
 ### Goals
 
@@ -106,12 +110,14 @@ Here is a demo creating a Minikube cluster and running a few tests, specifically
 - Composability
 - Target `minikube`, vanilla `Kubernetes` and Openshift.
 - Add the Rook Ops bits not covered by the Operator
+- Declarative trumps Imperative
 
 ### Non Goals
 
 ### Decisions
 
 - ArgoCD is great, but `helmfile` appears even better for our use case
+- We aim for first class citizens. For Rook, it's the helm charts, for some operators, its OLM Subscriptions.
 
 ### Features
 
@@ -120,8 +126,8 @@ We cover:
 - Single (All in Once Cluster) Deployments targetting `minikube` and Production Kubernetes (including Openshift)
 - Two Cluster Deployments (Service and Consumer) targetting `minikube` and Production Kubernetes (including Openshift)
 - Kube-Prometheus bits all wired up - including alerts
+- Shiny Dashboards (including Grafana)
 - Seamless integration with ArgoCD, specifically [`deas/argcocd-conductor`](https://github.com/deas/argcocd-conductor)
-Beyond deployments, we feature:
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -172,10 +178,10 @@ We want lifecycle of things (Create/Destroy) to be as fast as possible. We ship 
     - [ ] Nested Feature
 -->
 - Use `dyff` to separate out value files?
+- Separate out Observability, add Logging and Alerting
 - Support for Mon v2
 - Support for TLS/encryption
 - Replace imperative bits by declarative ones
-- asciinema demo (lolcat) / Dashboard Screenshots
 - Introduce Pentesting - maybe even Chaos Scenarios
 - Improve Observability / Include Alerts
 - Smoketests in CI
@@ -183,6 +189,7 @@ We want lifecycle of things (Create/Destroy) to be as fast as possible. We ship 
 - Use LVM instead of raw disks/partitions?
 - Performance: How/When do multiple disks per node make sense?
 - Exercise Upgrade/Recreate and Desaster Recovery + build tests
+- Introduce unhappy path tests -likely leveraging Litmus
 - Proper cascaded removal of `CephCluster`?
 - Finding-/cleaning up orphans (volumes or buckets)
 - Go deeper with `nix`/`devenv` - maybe even replace `mise`
@@ -202,6 +209,8 @@ mount error: no mds (Metadata Server) is up. The cluster might be laggy, or you 
 
 ## References
 
+- [Monitor OpenShift Virtualization using user-defined projects and Grafana](https://developers.redhat.com/articles/2024/08/19/monitor-openshift-virtualization-using-user-defined-projects-and-grafana)
+- [How to create a long lived service account token in RHOCP4](https://access.redhat.com/solutions/7025261)
 <!-- CONTRIBUTING -->
 ## Contributing
 

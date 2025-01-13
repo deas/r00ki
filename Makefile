@@ -1,4 +1,3 @@
-#  ssh -i $(minikube --profile r00ki-consumer ssh-key) docker@$(minikube --profile r00ki-consu mer ip)
 PV_SIZE=12Gi
 TOOLS_DIR=./tools
 # ENV=${ENV:=""}
@@ -17,6 +16,11 @@ PART_LABELS=
 #PART_SIZES=1G
 #PART_LABELS=metrics r00ki_bluestore
 MINIKUBE_COMMON_START_ARGS=--container-runtime=containerd --cpus=2 --driver=kvm2 --network=default --cni=cilium
+# OLM Addon unsuprisingly ... broken
+# MINIKUBE_COMMON_ADDONS=metrics-server olm
+# message: Back-off pulling image "quay.io/operatorhubio/catalog@sha256:e08a1cd21fe72dd1be92be738b4bf1515298206dac5479c17a4b3ed119e30bd4"
+# reason: ImagePullBackOff
+MINIKUBE_COMMON_ADDONS=metrics-server
 # Any amount of disks works in general
 MINIKUBE_SERVICE_START_ARGS=$(MINIKUBE_COMMON_START_ARGS) --disk-size=40g --extra-disks=3
 # wave=2 : Ensures operator is not removed, so it can take down everything else only 
@@ -53,7 +57,7 @@ apply-r00ki-aio: ## Apply Ceph Service Cluster
 		| sed -e s,^PART_LABELS=.*,PART_LABELS="\"$(PART_LABELS)\"",g \
 		| sed -e s,^PART_SIZES=.*,PART_SIZES="\"$(PART_SIZES)\"",g \
 		| ssh -o "StrictHostKeyChecking=no" -i $$(minikube --profile $(PROFILE_PREFIX)-$(ENV_AIO) ssh-key) docker@$$(minikube --profile $(PROFILE_PREFIX)-$(ENV_AIO) ip) sudo bash
-	minikube --profile $(PROFILE_PREFIX)-$(ENV_AIO) addons enable metrics-server
+	for addon in $(MINIKUBE_COMMON_ADDONS) ; do minikube --profile $(PROFILE_PREFIX)-$(ENV_AIO) addons enable $${addon} ; done
 	minikube --profile $(PROFILE_PREFIX)-$(ENV_AIO) addons enable volumesnapshots
 	make APPS_ENV=mini-$(ENV_AIO) apply-apps
 
@@ -61,15 +65,15 @@ apply-r00ki-aio: ## Apply Ceph Service Cluster
 apply-r00ki-service: ## Apply Ceph Service Cluster
 	minikube $(MINIKUBE_SERVICE_START_ARGS) --profile $(PROFILE_PREFIX)-$(ENV_SERVICE) start
 	if [ -n "$${PATCH_REGISTRY_MIRROR}" ] ; then make ENV=$(ENV_SERVICE) patch-registry-mirror ; fi
-	minikube --profile $(PROFILE_PREFIX)-$(ENV_SERVICE) addons enable metrics-server
+	for addon in $(MINIKUBE_COMMON_ADDONS) ; do minikube --profile $(PROFILE_PREFIX)-$(ENV_SERVICE) addons enable $${addon} ; done
 	make APPS_ENV=mini-$(ENV_SERVICE) apply-apps
 
 .PHONY: apply-r00ki-consumer
 apply-r00ki-consumer: ## Apply Ceph Consumer Cluster
 	minikube $(MINIKUBE_COMMON_START_ARGS) --profile $(PROFILE_PREFIX)-$(ENV_CONSUMER) start
 	if [ -n "$${PATCH_REGISTRY_MIRROR}" ] ; then make ENV=$(ENV_CONSUMER) patch-registry-mirror ; fi
+	for addon in $(MINIKUBE_COMMON_ADDONS) ; do minikube --profile $(PROFILE_PREFIX)-$(ENV_CONSUMER) addons enable $${addon} ; done
 	minikube --profile $(PROFILE_PREFIX)-$(ENV_CONSUMER) addons enable volumesnapshots
-	minikube --profile $(PROFILE_PREFIX)-$(ENV_CONSUMER) addons enable metrics-server
 	make APPS_ENV=mini-$(ENV_CONSUMER) apply-apps
 
 # TODO: Cluster(s) lifecycle should use CLUSTERS variable and we should dedupe

@@ -1,2 +1,4 @@
+operator: true
+openshift: false
 nameOverride: ""
 fullnameOverride: ""

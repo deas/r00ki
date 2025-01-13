@@ -1,0 +1,38 @@
+{{- if .Values.operator }}
+apiVersion: grafana.integreatly.org/v1beta1
+kind: GrafanaDatasource
+metadata:
+  name: alertmanager
+spec:
+{{- if .Values.openshift }}
+  valuesFrom:
+  - targetPath: "secureJsonData.httpHeaderValue1"
+    valueFrom:
+      secretKeyRef:
+        name: "grafana-sa"
+        key: "token"
+{{- end }}
+  datasource:
+    name: Alertmanager
+    access: proxy
+    # editable: true
+    type: alertmanager
+    # isDefault: true
+    jsonData:
+      handleGrafanaManagedAlerts: false
+      implementation: prometheus
+      timeInterval: 30s
+      tlsSkipVerify: true
+# TODO: Fix openshift urls
+{{- if .Values.openshift }}
+      httpHeaderName1: 'Authorization'
+    secureJsonData:
+      httpHeaderValue1: 'Bearer ${token}'
+    url: 'https://thanos-querier.openshift-monitoring.svc.cluster.local:9091'
+{{- else}}
+    url: 'http://alertmanager-operated:9093'
+{{- end }}
+  instanceSelector:
+    matchLabels:
+      dashboards: grafana
+{{- end }}

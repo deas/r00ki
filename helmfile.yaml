@@ -14,7 +14,6 @@ environments:
         enabled: true
     - rook-ceph-cluster-external:
         enabled: true
-        needs: "rook-ceph/rook-ceph-service"
     - rook-ceph-service:
         enabled: true
     - openshift: false
@@ -24,7 +23,6 @@ environments:
         enabled: true
     - rook-ceph-cluster-external:
         enabled: true
-        needs: "rook-ceph/rook-ceph-cluster" 
     - rook-ceph-service:
         enabled: false
     - openshift: false
@@ -43,7 +41,6 @@ environments:
         enabled: true
     - rook-ceph-cluster-external:
         enabled: true
-        needs: "rook-ceph/rook-ceph-service"
     - rook-ceph-service:
         enabled: true
     - openshift: true
@@ -53,7 +50,6 @@ environments:
         enabled: true
     - rook-ceph-cluster-external:
         enabled: true
-        needs: "rook-ceph/rook-ceph-cluster" 
     - rook-ceph-service:
         enabled: false
     - openshift: true
@@ -79,6 +75,28 @@ environments:
 #- templates.yaml
 
 releases:
+{{- if not .Environment.Values.openshift }}
+  - name: olm
+    chart: oci://ghcr.io/cloudtooling/helm-charts/olm
+    namespace: default
+    version: 0.30.0
+    values:
+    - apps/olm/values.yaml
+{{- end }}
+  - name: operators
+    chart: ./apps/operators
+    namespace: openshift-operators
+    createNamespace: true
+    values:
+{{- if .Environment.Values.openshift }}
+    - apps/{{`{{ .Release.Name }}`}}/envs/openshift/values.yaml
+{{- else }}
+    - apps/{{`{{ .Release.Name }}`}}/envs/default/values.yaml
+{{- end }}
+{{- if not .Environment.Values.openshift }}
+    needs:
+    - default/olm
+{{- end }}
   - name: rook-ceph
     chart: rook-release/rook-ceph
     version: ~1.16.0
@@ -87,8 +105,10 @@ releases:
     values:
     #- apps/{{`{{ .Release.Name }}`}}/values.yaml
     - apps/{{`{{ .Release.Name }}`}}/envs/{{`{{ .Environment.Name }}`}}/values.yaml
+{{- if not .Environment.Values.openshift }}
     needs:
     - openshift-user-workload-monitoring/kube-prometheus-stack
+{{- end}}
   - name: rook-ceph-cluster
     chart: rook-release/rook-ceph-cluster
     version: ~1.16.0
@@ -99,31 +119,7 @@ releases:
     - rook-ceph/rook-ceph
     labels:
       wave: 2
-{{- if (index .Environment.Values "rook-ceph-cluster-external").enabled }}
-  - name: rook-ceph-cluster-external
-    chart: ./apps/rook-ceph-cluster-external
-    namespace: rook-ceph
-    values:
-    - apps/{{`{{ .Release.Name }}`}}/envs/{{`{{ .Environment.Name }}`}}/values.yaml
-    needs:
-    - {{ (index .Environment.Values "rook-ceph-cluster-external").needs }}
-    labels:
-      wave: 2
-    hooks:
-    # prepare preapply presync preuninstall postuninstall postsync cleanup
-    - events: ["postsync"]
-      showlogs: false
-      command: "sh"
-      args: ["-c", "./tools/prepare-velero.sh"]
-{{- end}}
 {{- if (index .Environment.Values "rook-ceph-service").enabled }}
-  - name: rook-ceph-service
-    chart: ./apps/rook-ceph-service
-    namespace: rook-ceph
-    needs:
-    - rook-ceph/rook-ceph-cluster
-    labels:
-      wave: 2
     hooks:
     # prepare preapply presync preuninstall postuninstall postsync cleanup
     - events: ["postsync"]
@@ -133,12 +129,44 @@ releases:
       command: "sh" # prepare-consumer.sh"
       args: ["-c", "./tools/prepare-consumer.sh {{ splitList "-" .Environment.Name | last }}"]
       # args: ["{{`{{.Environment.Name}}`}}", "{{`{{.Release.Name}}`}}", "{{`{{.HelmfileCommand}}`}}"]
+{{- end }}
+{{- if (index .Environment.Values "rook-ceph-cluster-external").enabled }}
+  - name: rook-ceph-cluster-external
+    chart: ./apps/rook-ceph-cluster-external
+    namespace: rook-ceph
+    values:
+    - apps/{{`{{ .Release.Name }}`}}/envs/{{`{{ .Environment.Name }}`}}/values.yaml
+    needs:
+    - rook-ceph/rook-ceph-cluster
+    labels:
+      wave: 2
+    hooks:
+    # prepare preapply presync preuninstall postuninstall postsync cleanup
+    - events: ["postsync"]
+      showlogs: false
+      command: "sh"
+      args: ["-c", "./tools/prepare-velero.sh"]
 {{- end}}
   - name: rook-ceph-dashboards
     chart: ./apps/rook-ceph-dashboards
     namespace: openshift-user-workload-monitoring
+{{- if not .Environment.Values.openshift }}
+    hooks:
+    # prepare preapply presync preuninstall postuninstall postsync cleanup
+    - events: ["presync"]
+      showlogs: false
+      command: "sh"
+      args: ["-c", "kubectl -n openshift-operators wait --timeout=180s --for=jsonpath='{.status.state}'=AtLatestKnown subscription/grafana-operator"]
+{{- end }}
     values:
     - apps/{{`{{ .Release.Name }}`}}/values.yaml
+{{- if .Environment.Values.openshift }}
+    - apps/{{`{{ .Release.Name }}`}}/envs/openshift/values.yaml
+{{- else }}
+    - apps/{{`{{ .Release.Name }}`}}/envs/default/values.yaml
+    needs:
+    -  openshift-operators/operators
+{{- end }}
 {{- if .Environment.Values.velero.enabled }}
   - name: velero
     chart: vmware-tanzu/velero
@@ -151,14 +179,11 @@ releases:
     needs:
     - rook-ceph/rook-ceph-cluster-external
 {{- end }}
+{{- if not .Environment.Values.openshift }}
   - name: kube-prometheus-stack
     chart: prometheus-community/kube-prometheus-stack
     version: ~67.4.0
     namespace: openshift-user-workload-monitoring
-{{- if .Environment.Values.openshift }}
-    values:
-    - apps/{{`{{ .Release.Name }}`}}/envs/openshift/values.yaml
-{{- else }}
     values:
     - apps/{{`{{ .Release.Name }}`}}/envs/default/values.yaml
 {{- end }}

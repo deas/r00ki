@@ -1,0 +1,13 @@
+# operatorsNamespace: operators
+operatorsNamespace: openshift-operators
+subscriptions:
+  - name: grafana-operator
+    namespace: openshift-operators
+    channel: v5
+    source: community-operators
+    sourceNamespace: openshift-marketplace
+  - name: loki-operator
+    namespace: openshift-operators
+    channel: alpha
+    source: community-operators
+    sourceNamespace: openshift-marketplace
