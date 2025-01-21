@@ -25,7 +25,7 @@
     <img src="images/logo.png" alt="Logo" width="80" height="80">
   </a-->
 
-<h3 align="center">R00ki - Rook Ceph Incubator 🧪</h3>
+<h3 align="center">R00ki : Taking Rook Ceph from localhost to Production 🧪</h3>
 
   <p align="center">
     <!--project_description
@@ -56,7 +56,7 @@
       <a href="#getting-started">Getting Started</a>
       <ul>
         <li><a href="#prerequisites">Prerequisites</a></li>
-        <li><a href="#usage">Installation</a></li>
+        <li><a href="#usage">Usage</a></li>
       </ul>
     </li>
     <li><a href="#todo">TODO</a></li>
@@ -91,7 +91,7 @@ Disclaimer: We started by borrowing proven things from the Rook project - adapte
 
 <!-- https://docs.github.com/en/get-started/writing-on-github/working-with-advanced-formatting/organizing-information-with-collapsed-sections -->
 <details>
-<summary>Demo creating a Minikube cluster and running a few tests</summary>
+<summary>Demo creating a Minikube cluster and running a few tests 🪄🎩🐰</summary>
 
 ```sh
  make apply-r00ki-aio test-csi-io test-csi-snapshot test-velero
@@ -259,7 +259,7 @@ Project Link: [https://github.com/deas/r00ki](https://github.com/deas/r00ki)
 * []()
 -->
 
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
+<!-- p align="right">(<a href="#readme-top">back to top</a>)</p-->
 
 <!-- MARKDOWN LINKS & IMAGES -->
 <!-- https://www.markdownguide.org/basic-syntax/#reference-style-links -->

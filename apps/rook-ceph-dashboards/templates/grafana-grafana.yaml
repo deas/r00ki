@@ -9,8 +9,9 @@ spec:
   # An empty route spec is enough to signal the creation of a default
   # route to the operator. This can also be used to override defaults
   # in the route spec.
-  #route:
-  #  spec: {}
+  # TODO: Does not appear to create a route?
+  route:
+    spec: {}
   config:
     log:
       mode: "console"
