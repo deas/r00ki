@@ -108,7 +108,7 @@ Disclaimer: We started by borrowing proven things from the Rook project - adapte
 - Fail early and loud (Notifications)
 - Simplicity (yes, really)
 - Composability
-- Target `minikube`, vanilla `Kubernetes` and Openshift.
+- Target `minikube`, vanilla Kubernetes and Openshift.
 - Add the Rook Ops bits not covered by the Operator
 - Declarative trumps Imperative
 

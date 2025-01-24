@@ -5,9 +5,9 @@ subscriptions:
     namespace: openshift-operators
     channel: v5
     source: operatorhubio-catalog
-    sourceNamespace: operator-lifecycle-manager
+    sourceNamespace: openshift-operator-lifecycle-manager
   - name: loki-operator
     namespace: openshift-operators
     channel: alpha
     source: operatorhubio-catalog
-    sourceNamespace: operator-lifecycle-manager
+    sourceNamespace: openshift-operator-lifecycle-manager
