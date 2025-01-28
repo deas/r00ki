@@ -64,7 +64,6 @@ cephBlockPools: # {}
       replicated:
         size: 3
         # requireSafeReplicaSize: false
-        apiVersion: ceph.rook.io/v1
   - name: replicapool
     storageClass:
       enabled: false

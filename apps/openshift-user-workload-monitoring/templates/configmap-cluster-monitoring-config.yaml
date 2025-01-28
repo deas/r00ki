@@ -1,0 +1,14 @@
+{{- if .Values.openshift }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  # A bit ugly to have a static ns here. However, appears to be the simplest solution
+  name: cluster-monitoring-config
+  namespace: openshift-monitoring
+data:
+  config.yaml: |
+    enableUserWorkload: true
+    alertmanagerMain:
+      enabled: true
+      # enableUserAlertmanagerConfig: true
+{{- end }}

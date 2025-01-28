@@ -64,7 +64,6 @@ cephBlockPools: # {}
       replicated:
         size: 3
         # requireSafeReplicaSize: false
-        apiVersion: ceph.rook.io/v1
   - name: replicapool
     storageClass:
       enabled: true
@@ -137,7 +136,7 @@ cephFileSystems:
         - # failureDomain: osd # host
           replicated:
             size: 3
-          #requireSafeReplicaSize: false
+            # requireSafeReplicaSize: false
           # Optional and highly recommended, 'data0' by default, see https://github.com/rook/rook/blob/v1.15.6/Documentation/CRDs/Shared-Filesystem/ceph-filesystem-crd.md#pools
           name: replicated
       preserveFilesystemOnDelete: false

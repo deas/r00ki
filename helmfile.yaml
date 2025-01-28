@@ -147,8 +147,8 @@ releases:
       command: "sh"
       args: ["-c", "./tools/prepare-velero.sh"]
 {{- end}}
-  - name: rook-ceph-dashboards
-    chart: ./apps/rook-ceph-dashboards
+  - name: openshift-user-workload-monitoring
+    chart: ./apps/openshift-user-workload-monitoring
     namespace: openshift-user-workload-monitoring
 {{- if not .Environment.Values.openshift }}
     hooks:
@@ -186,9 +186,4 @@ releases:
     namespace: openshift-user-workload-monitoring
     values:
     - apps/{{`{{ .Release.Name }}`}}/envs/default/values.yaml
-{{- end }}
-{{- if .Environment.Values.openshift }}
-  - name: openshift-monitoring
-    chart: apps/openshift-monitoring
-    namespace: openshift-monitoring
 {{- end }}

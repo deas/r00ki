@@ -1,0 +1,16 @@
+{{- if .Values.openshift }}
+# oc -n <namespace> adm policy add-role-to-user alert-routing-edit <user> 
+# https://docs.openshift.com/container-platform/4.17/observability/monitoring/config-map-reference-for-the-cluster-monitoring-operator.html#userworkloadconfiguration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: user-workload-monitoring-config
+data:
+  config.yaml: |
+    #prometheus:
+    #prometheusOperator:
+    #thanosRuler:
+    alertmanager:
+      enabled: true 
+      # enableAlertmanagerConfig: true
+{{- end }}
