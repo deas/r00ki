@@ -21,11 +21,12 @@ BUCKET_PORT=$(kubectl get -n "${ns}" configmap "${obc}" -o jsonpath='{.data.BUCK
 ACCESS_KEY_ID=$(kubectl get -n "${ns}" secret "${obc}" -o jsonpath='{.data.AWS_ACCESS_KEY_ID}' | base64 -d)
 SECRET_ACCESS_KEY=$(kubectl get -n "${ns}" secret "${obc}" -o jsonpath='{.data.AWS_SECRET_ACCESS_KEY}' | base64 -d)
 
-kubectl create -n "${ns}" secret generic "${obc}" \
+# Postfix -ls so we do not override the obc secrets
+kubectl create -n "${ns}" secret generic "${obc}-ls" \
   --from-literal=access_key_id="${ACCESS_KEY_ID}" \
   --from-literal=access_key_secret="${SECRET_ACCESS_KEY}" \
   --from-literal=bucketnames="${BUCKET_NAME}" \
-  --from-literal=endpoint="https://${BUCKET_HOST}:${BUCKET_PORT}" \
+  --from-literal=endpoint="http://${BUCKET_HOST}:${BUCKET_PORT}" \
   --dry-run=client -o yaml
 
 #cat <<EOF | oc apply -f -
