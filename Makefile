@@ -15,7 +15,8 @@ PART_SIZES=
 PART_LABELS=
 #PART_SIZES=1G
 #PART_LABELS=metrics r00ki_bluestore
-MINIKUBE_COMMON_START_ARGS=--container-runtime=containerd --cpus=2 --driver=kvm2 --network=default --cni=cilium
+MINIKUBE_COMMON_START_ARGS=--container-runtime=containerd --cpus=2 --driver=kvm2 --network=default
+# --wait=all -cni=cilium
 # OLM Addon unsuprisingly ... broken
 # MINIKUBE_COMMON_ADDONS=metrics-server olm
 # message: Back-off pulling image "quay.io/operatorhubio/catalog@sha256:e08a1cd21fe72dd1be92be738b4bf1515298206dac5479c17a4b3ed119e30bd4"
@@ -36,6 +37,11 @@ help:  ## Display this help
 
 .PHONY: apply-apps 
 apply-apps: ## Apply Apps
+	if [ "$(APPS_ENV)" = "mini-$(ENV_SERVICE)" ] ; then \
+		$(TOOLS_DIR)/kvm-helm-hack-apply-crds.sh; \
+	else \
+		$(TOOLS_DIR)/kvm-helm-hack-apply-crds.sh velero; \
+	fi
 	helmfile sync --concurrency 0 --environment $(APPS_ENV)
 
 .PHONY: destroy-apps
@@ -45,7 +51,7 @@ destroy-apps: ## Destroy Apps
 .PHONY: patch-registry-mirror
 patch-registry-mirror: ## Patch containerd registry mirror
 	scp -o "StrictHostKeyChecking=no" -i $$(minikube --profile $(PROFILE_PREFIX)-$(ENV) ssh-key) $(TOOLS_DIR)/patch-containerd.sh docker@$$(minikube --profile $(PROFILE_PREFIX)-$(ENV) ip):
-	./$(TOOLS_DIR)/docker-registry-proxies.sh ghcr-proxy ghcr.io quay-proxy quay.io docker-proxy docker.io k8s-proxy registry.k8s.io | \
+	$(TOOLS_DIR)/docker-registry-proxies.sh ghcr-proxy ghcr.io quay-proxy quay.io docker-proxy docker.io k8s-proxy registry.k8s.io | \
 		ssh -o "StrictHostKeyChecking=no" -i $$(minikube --profile $(PROFILE_PREFIX)-$(ENV) ssh-key) docker@$$(minikube --profile $(PROFILE_PREFIX)-$(ENV) ip) \
 		'chmod 755 patch-containerd.sh && sudo $${HOME}/patch-containerd.sh && sudo systemctl restart containerd && while [ ! -e /run/containerd/containerd.sock ]; do sleep 1; done'
 
@@ -59,6 +65,7 @@ apply-r00ki-aio: ## Apply Ceph Service Cluster
 		| ssh -o "StrictHostKeyChecking=no" -i $$(minikube --profile $(PROFILE_PREFIX)-$(ENV_AIO) ssh-key) docker@$$(minikube --profile $(PROFILE_PREFIX)-$(ENV_AIO) ip) sudo bash
 	for addon in $(MINIKUBE_COMMON_ADDONS) ; do minikube --profile $(PROFILE_PREFIX)-$(ENV_AIO) addons enable $${addon} ; done
 	minikube --profile $(PROFILE_PREFIX)-$(ENV_AIO) addons enable volumesnapshots
+	# kubectl api-versions # Wipe discovery cache / helm CRD workaround
 	make APPS_ENV=mini-$(ENV_AIO) apply-apps
 
 .PHONY: apply-r00ki-service

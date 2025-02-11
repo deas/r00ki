@@ -198,6 +198,7 @@ We want lifecycle of things (Create/Destroy) to be as fast as possible. We ship 
 
 ## Known Issues
 
+- With kvm + minikube, there appears to be a timing issue with helm when used via helmfile. `helm upgrade` sometimes fails due to CRDs unavailable - s. [fix: clear the discovery cache after CRDs are installed](https://github.com/helm/helm/pull/6332)
 - ["To sum up: the Docker daemon does not currently support multiple registry mirrors ..."](https://blog.alexellis.io/how-to-configure-multiple-docker-registry-mirrors/) -> `minikube start --registry-mirror="http://yourmirror"`
 - kvm network dns(masq) slow from minikube kubernetes. Times out for s3.
   Patching coredns gets around the issue.

@@ -6,6 +6,12 @@ repositories:
 - name: prometheus-community
   url: https://prometheus-community.github.io/helm-charts
 
+# Waiting does not help with the kvm2/minikube/helm crd timing issue
+#helmDefaults:
+#  #syncArgs:
+#  #- "--wait"
+#  wait: true
+
 # https://github.com/roboll/helmfile/issues/1247
 environments:
   mini-aio:
