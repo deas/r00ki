@@ -58,6 +58,12 @@ patch-registry-mirror: ## Patch containerd registry mirror
 		ssh -o "StrictHostKeyChecking=no" -i $$(minikube --profile $(PROFILE_PREFIX)-$(ENV) ssh-key) docker@$$(minikube --profile $(PROFILE_PREFIX)-$(ENV) ip) \
 		'chmod 755 patch-containerd.sh && sudo $${HOME}/patch-containerd.sh && sudo systemctl restart containerd && while [ ! -e /run/containerd/containerd.sock ]; do sleep 1; done'
 
+.PHONY: genenerate-blkdv-pvs
+generate-blkdv-pvs: ## Generate block device PVs
+	cat $(TOOLS_DIR)/blkdev-pvs.sh | \
+		ssh -o "StrictHostKeyChecking=no" -i $$(minikube --profile $(PROFILE_PREFIX)-$(ENV) ssh-key) docker@$$(minikube --profile $(PROFILE_PREFIX)-$(ENV) ip) \
+		'bash -'
+
 .PHONY: apply-r00ki-aio
 apply-r00ki-aio: ## Apply Ceph Service Cluster
 	minikube $(MINIKUBE_SERVICE_START_ARGS) --profile $(PROFILE_PREFIX)-$(ENV_AIO) start
