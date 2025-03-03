@@ -58,11 +58,11 @@ patch-registry-mirror: ## Patch containerd registry mirror
 		ssh -o "StrictHostKeyChecking=no" -i $$(minikube --profile $(PROFILE_PREFIX)-$(ENV) ssh-key) docker@$$(minikube --profile $(PROFILE_PREFIX)-$(ENV) ip) \
 		'chmod 755 patch-containerd.sh && sudo $${HOME}/patch-containerd.sh && sudo systemctl restart containerd && while [ ! -e /run/containerd/containerd.sock ]; do sleep 1; done'
 
-.PHONY: genenerate-blkdv-pvs
+.PHONY: generate-blkdv-pvs
 generate-blkdv-pvs: ## Generate block device PVs
 	cat $(TOOLS_DIR)/blkdev-pvs.sh | \
 		ssh -o "StrictHostKeyChecking=no" -i $$(minikube --profile $(PROFILE_PREFIX)-$(ENV) ssh-key) docker@$$(minikube --profile $(PROFILE_PREFIX)-$(ENV) ip) \
-		'bash -'
+		'bash -' | kubectl apply -f -
 
 .PHONY: apply-r00ki-aio
 apply-r00ki-aio: ## Apply Ceph Service Cluster
@@ -74,6 +74,7 @@ apply-r00ki-aio: ## Apply Ceph Service Cluster
 		| ssh -o "StrictHostKeyChecking=no" -i $$(minikube --profile $(PROFILE_PREFIX)-$(ENV_AIO) ssh-key) docker@$$(minikube --profile $(PROFILE_PREFIX)-$(ENV_AIO) ip) sudo bash
 	for addon in $(MINIKUBE_COMMON_ADDONS) ; do minikube --profile $(PROFILE_PREFIX)-$(ENV_AIO) addons enable $${addon} ; done
 	minikube --profile $(PROFILE_PREFIX)-$(ENV_AIO) addons enable volumesnapshots
+	make ENV=$(ENV_AIO) generate-blkdv-pvs
 	# kubectl api-versions # Wipe discovery cache / helm CRD workaround
 	make APPS_ENV=mini-$(ENV_AIO) apply-apps
 

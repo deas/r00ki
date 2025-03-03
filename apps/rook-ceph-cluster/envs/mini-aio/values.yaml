@@ -25,15 +25,33 @@ cephClusterSpec:
   crashCollector:
     disable: true
   storage:
-    useAllNodes: true
-    #useAllDevices: true
-    allowDeviceClassUpdate: true
-    allowOsdCrushWeightUpdate: false
-    #useAllDevices: false
-    #devicePathFilter: /dev/disk/by-partlabel/rook-.*
-    #deviceFilter:
-    #config:
-    #  deviceClass: testclass
+    storageClassDeviceSets:
+      - name: set1
+        count: 3
+        #portable: false
+        #encrypted: false
+        volumeClaimTemplates:
+          - metadata:
+              name: data
+            spec:
+              resources:
+                requests:
+                  storage: 40Gi
+              storageClassName: manual
+              volumeMode: Block
+              accessModes:
+                - ReadWriteOnce
+    # onlyApplyOSDPlacement: false
+  #storage:
+  #  useAllNodes: true
+  #  #useAllDevices: true
+  # allowDeviceClassUpdate: true
+  # allowOsdCrushWeightUpdate: false
+  # #useAllDevices: false
+  # #devicePathFilter: /dev/disk/by-partlabel/rook-.*
+  # #deviceFilter:
+  # #config:
+  # #  deviceClass: testclass
   monitoring:
     enabled: true
   healthCheck:
