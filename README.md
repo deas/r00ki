@@ -1,5 +1,7 @@
 <!-- Improved compatibility of back to top link: See: https://github.com/othneildrew/Best-README-Template/pull/73 -->
+
 <a id="readme-top"></a>
+
 <!-- PROJECT SHIELDS -->
 <!--
 *** I'm using markdown "reference style" links for readability.
@@ -71,6 +73,7 @@
 </details>
 
 <!-- ABOUT THE PROJECT -->
+
 ## About The Project
 
 <!--
@@ -142,6 +145,7 @@ We cover:
 -->
 
 <!-- GETTING STARTED -->
+
 ## Getting Started
 
 Some opinions first:
@@ -171,12 +175,15 @@ We want lifecycle of things (Create/Destroy) to be as fast as possible. We ship 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 <!-- TODO -->
+
 ## TODO
+
 <!--
 - [ ] Feature 1
 - [ ] Feature 3
     - [ ] Nested Feature
 -->
+
 - Use `dyff` to separate out value files?
 - Separate out Observability, add Logging and Alerting
 - Support for Mon v2
@@ -213,6 +220,7 @@ mount error: no mds (Metadata Server) is up. The cluster might be laggy, or you 
 - [Monitor OpenShift Virtualization using user-defined projects and Grafana](https://developers.redhat.com/articles/2024/08/19/monitor-openshift-virtualization-using-user-defined-projects-and-grafana)
 - [How to create a long lived service account token in RHOCP4](https://access.redhat.com/solutions/7025261)
 <!-- CONTRIBUTING -->
+
 ## Contributing
 
 Contributions are what make the open source community such an amazing place to learn, inspire, and create. Any contributions you make are **greatly appreciated**.
@@ -236,6 +244,7 @@ Don't forget to give the project a star! Thanks again!
 -->
 
 <!-- LICENSE -->
+
 ## License
 
 Distributed under the MIT License. See `LICENSE.txt` for more information.
