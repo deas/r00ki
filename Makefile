@@ -26,7 +26,7 @@ MINIKUBE_COMMON_ADDONS=metrics-server
 MINIKUBE_SERVICE_START_ARGS=$(MINIKUBE_COMMON_START_ARGS) --disk-size=40g --extra-disks=3
 # wave=2 : Ensures operator is not removed, so it can take down everything else only 
 
-HELMFILE_COMMON_ARGS=--concurrency 0
+HELMFILE_COMMON_ARGS=--concurrency 1 
 # HELMFILE_COMMON_ARGS=--concurrency 1 --debug
 # -f helmfile.yaml
 HELMFILE_DESTROY_EXTRA_ARGS=--selector wave=2
@@ -46,12 +46,13 @@ help:  ## Display this help
 
 .PHONY: apply-apps 
 apply-apps: ## Apply Apps
-	#if [ "$(APPS_ENV)" = "mini-$(ENV_SERVICE)" ] ; then \
-	#	$(TOOLS_DIR)/kvm-helm-hack-apply-crds.sh; \
-	#else \
-	#	$(TOOLS_DIR)/kvm-helm-hack-apply-crds.sh velero; \
-	#fi
-	kubectl get pod -A
+	if [ "$(APPS_ENV)" = "mini-$(ENV_SERVICE)" ] ; then \
+		$(TOOLS_DIR)/kvm-helm-hack-apply-crds.sh; \
+	else \
+		$(TOOLS_DIR)/kvm-helm-hack-apply-crds.sh velero; \
+	fi
+	# kubectl get pod -A
+	sleep 60
 	helmfile sync $(HELMFILE_COMMON_ARGS) --environment $(APPS_ENV)
 
 .PHONY: destroy-apps
