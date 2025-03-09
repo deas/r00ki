@@ -1,9 +1,7 @@
+# make apply-demo ; make destroy-demo ; make MINIKUBE_START_ARGS=--driver=docker apply-demo ; make destroy-demo
 # virtualbox, kvm2, qemu2, qemu, vmware, none, docker, podman, ssh
-# DRIVER=kvm2
-MINIKUBE_START_ARGS=--container-runtime=containerd --cpus=2 --driver=kvm2 --network=default
-# MINIKUBE_START_ARGS=--container-runtime=containerd --cpus=2 --driver=docker
-# --kubernetes-version=v1.28.13
-# --wait=all
+MINIKUBE_START_ARGS=--container-runtime=containerd --cpus=4 --memory=8g --driver=kvm2 --network=default
+# MINIKUBE_START_ARGS=--cpus=2 --driver=docker
 
 .DEFAULT_GOAL := help
 
@@ -17,6 +15,7 @@ apply-demo: ## Apply demo
 	minikube $(MINIKUBE_START_ARGS) --profile demo start --wait=all
 	kubectl get pod -A
 	minikube --profile demo ssh "ps -axww"
+	# The following line can be used to work around the issue with the kvm2 driver
 	# sleep 60
 	helm upgrade -i olm oci://ghcr.io/cloudtooling/helm-charts/olm --debug --version 0.30.0 || kubectl explain OLMConfig
 
