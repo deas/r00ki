@@ -26,8 +26,9 @@ MINIKUBE_COMMON_ADDONS=metrics-server
 MINIKUBE_SERVICE_START_ARGS=$(MINIKUBE_COMMON_START_ARGS) --disk-size=40g --extra-disks=3
 # wave=2 : Ensures operator is not removed, so it can take down everything else only 
 
-# HELMFILE_COMMON_ARGS=--concurrency 0
-HELMFILE_COMMON_ARGS=--concurrency 1 --debug -f helmfile.yaml
+HELMFILE_COMMON_ARGS=--concurrency 0
+# HELMFILE_COMMON_ARGS=--concurrency 1 --debug
+# -f helmfile.yaml
 HELMFILE_DESTROY_EXTRA_ARGS=--selector wave=2
 
 # TODO: MANIFEST_DYNAMIC duplicated in helmfile
