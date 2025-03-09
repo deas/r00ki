@@ -1,6 +1,7 @@
 # virtualbox, kvm2, qemu2, qemu, vmware, none, docker, podman, ssh
-DRIVER=kvm2
-MINIKUBE_START_ARGS=--container-runtime=containerd --cpus=2 --driver=$(DRIVER) --network=default
+# DRIVER=kvm2
+MINIKUBE_START_ARGS=--container-runtime=containerd --cpus=2 --driver=kvm2 --network=default
+# MINIKUBE_START_ARGS=--container-runtime=containerd --cpus=2 --driver=docker
 # --kubernetes-version=v1.28.13
 # --wait=all
 
