@@ -1,4 +1,6 @@
 # make apply-demo ; make destroy-demo ; make MINIKUBE_START_ARGS=--driver=docker apply-demo ; make destroy-demo
+# https://github.com/helm/helm/issues/6316
+# https://github.com/helm/helm/pull/6332
 # virtualbox, kvm2, qemu2, qemu, vmware, none, docker, podman, ssh
 MINIKUBE_START_ARGS=--container-runtime=containerd --cpus=4 --memory=8g --driver=kvm2 --network=default
 # MINIKUBE_START_ARGS=--cpus=2 --driver=docker
