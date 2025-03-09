@@ -17,7 +17,7 @@ apply-demo: ## Apply demo
 	kubectl get pod -A
 	minikube --profile demo ssh "ps -axww"
 	# sleep 60
-	helm upgrade -i olm oci://ghcr.io/cloudtooling/helm-charts/olm --debug --version 0.30.0
+	helm upgrade -i olm oci://ghcr.io/cloudtooling/helm-charts/olm --debug --version 0.30.0 || kubectl explain OLMConfig
 
 .PHONY: destroy-demo
 destroy-demo: ## Destroy Demo
