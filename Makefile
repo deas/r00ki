@@ -28,7 +28,7 @@ MINIKUBE_SERVICE_START_ARGS=$(MINIKUBE_COMMON_START_ARGS) --disk-size=40g --extr
 HELMFILE_DESTROY_EXTRA_ARGS=--selector wave=2
 # TODO: MANIFEST_DYNAMIC duplicated in helmfile
 MANIFEST_DYNAMIC_PATH=apps/rook-ceph-cluster-external/files
-MANIFEST_DYNAMIC=$(MANIFEST_DYNAMIC_PATH)/manifest-dynamic.yaml 
+MANIFEST_DYNAMIC=$(MANIFEST_DYNAMIC_PATH)/manifest-dynamic.yaml
 # TODO: Beware of the k8s contexts!
 .DEFAULT_GOAL := help
 
