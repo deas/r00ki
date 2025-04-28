@@ -26,6 +26,9 @@ MINIKUBE_COMMON_ADDONS=metrics-server
 MINIKUBE_SERVICE_START_ARGS=$(MINIKUBE_COMMON_START_ARGS) --disk-size=40g --extra-disks=3
 # wave=2 : Ensures operator is not removed, so it can take down everything else only 
 HELMFILE_DESTROY_EXTRA_ARGS=--selector wave=2
+# TODO: MANIFEST_DYNAMIC duplicated in helmfile
+MANIFEST_DYNAMIC_PATH=apps/rook-ceph-cluster-external/files
+MANIFEST_DYNAMIC=$(MANIFEST_DYNAMIC_PATH)/manifest-dynamic.yaml 
 # TODO: Beware of the k8s contexts!
 .DEFAULT_GOAL := help
 
@@ -153,3 +156,8 @@ port-forward-dashboard: ## Port forward Ceph Dashboard
 .PHONY: show-ceph-status
 show-ceph-status: ## Show Ceph Status
 	kubectl rook-ceph ceph status
+
+.PHONY: split-external-manifest
+split-external-manifest: ## Split external manifest
+	yq 'select(.kind != "Secret")' < $(MANIFEST_DYNAMIC) > $(MANIFEST_DYNAMIC_PATH)/manifest-misc.yaml
+	yq 'select(.kind == "Secret")' < $(MANIFEST_DYNAMIC) > $(MANIFEST_DYNAMIC_PATH)/manifest-secrets.yaml

@@ -6,8 +6,11 @@ ROOK_CLUSTER_NS=rook-ceph
 STORE=my-store
 FS=myfs
 POOL=replicapool
-INI_FILE=config.ini
-MANIFEST_DYNAMIC=apps/rook-ceph-cluster-external/files/manifest-dynamic.yaml
+: "${INI_FILE:="config.ini"}"
+: "${MANIFEST_DYNAMIC_PATH:="apps/rook-ceph-cluster-external/files"}"
+
+MANIFEST_DYNAMIC="${MANIFEST_DYNAMIC_PATH}/manifest-dynamic.yaml"
+
 TOOLS_DIR="$(cd "$(dirname "$0")" && pwd)"
 #CONTEXT="todo"
 #NODENAME="todo"
@@ -66,5 +69,7 @@ else
 fi
 
 if [ "${ENV_TYPE}" != "aio" ]; then
-  "${TOOLS_DIR}/import-external-cluster-manifests.sh" >${MANIFEST_DYNAMIC}
+  "${TOOLS_DIR}/gen-external-cluster-config-manifests.sh" >${MANIFEST_DYNAMIC}
+  # yq 'select(.kind != "Secret")' <${MANIFEST_DYNAMIC} >${MANIFEST_DYNAMIC}/manifest-misc.yaml
+  # yq 'select(.kind == "Secret")' <${MANIFEST_DYNAMIC} >${MANIFEST_DYNAMIC}/manifest-secrets.yaml
 fi

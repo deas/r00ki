@@ -133,7 +133,7 @@ releases:
       # TODO:: Wait for resources, run ./setup-rbd.sh or ./export-config.sh (aio or external)
       # command: "echo"
       command: "sh" # prepare-consumer.sh"
-      args: ["-c", "./tools/prepare-consumer.sh {{ splitList "-" .Environment.Name | last }}"]
+      args: ["-c", "MANIFEST_DYNAMIC_PATH=apps/rook-ceph-cluster-external/files /tools/prepare-consumer.sh {{ splitList "-" .Environment.Name | last }}"]
       # args: ["{{`{{.Environment.Name}}`}}", "{{`{{.Release.Name}}`}}", "{{`{{.HelmfileCommand}}`}}"]
 {{- end }}
 {{- if (index .Environment.Values "rook-ceph-cluster-external").enabled }}

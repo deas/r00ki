@@ -2,7 +2,7 @@
 set -e
 
 source ./config.ini
-CREATE="create --dry-run=client -o yaml"
+CREATE="create --validate=false --dry-run=client -o yaml"
 ##############
 # VARIABLES #
 #############
@@ -78,16 +78,16 @@ function checkEnvVars() {
   fi
 }
 
-function createClusterNamespace() {
-  $KUBECTL \
-    ${CREATE} \
-    namespace \
-    "$NAMESPACE"
-  echo "---"
-}
+#function createClusterNamespace() {
+#  $KUBECTL \
+#    ${CREATE} \
+#    namespace \
+#    "$NAMESPACE"
+#  echo "---"
+#}
 
 function createRadosNamespaceCR() {
-  cat <<eof | $KUBECTL ${CREATE} -f -
+  cat <<eof
 apiVersion: ceph.rook.io/v1
 kind: CephBlockPoolRadosNamespace
 metadata:
@@ -101,7 +101,7 @@ eof
 }
 
 function createSubvolumeGroupCR() {
-  cat <<eof | $KUBECTL ${CREATE} -f -
+  cat <<eof
 ---
 apiVersion: ceph.rook.io/v1
 kind: CephFilesystemSubVolumeGroup
@@ -225,7 +225,7 @@ function importRGWAdminOpsUser() {
 }
 
 function createECRBDStorageClass() {
-  cat <<eof | $KUBECTL ${CREATE} -f -
+  cat <<eof
 apiVersion: storage.k8s.io/v1
 kind: StorageClass
 metadata:
@@ -251,7 +251,7 @@ eof
 }
 
 function createRBDStorageClass() {
-  cat <<eof | $KUBECTL ${CREATE} -f -
+  cat <<eof
 apiVersion: storage.k8s.io/v1
 kind: StorageClass
 metadata:
@@ -301,7 +301,7 @@ function createTopology() {
 }
 
 function createRBDTopologyStorageClass() {
-  cat <<eof | kubectl ${CREATE} -f -
+  cat <<eof
 apiVersion: storage.k8s.io/v1
 kind: StorageClass
 metadata:
@@ -329,7 +329,7 @@ eof
 }
 
 function createCephFSStorageClass() {
-  cat <<eof | $KUBECTL ${CREATE} -f -
+  cat <<eof
 apiVersion: storage.k8s.io/v1
 kind: StorageClass
 metadata:
