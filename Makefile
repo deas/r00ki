@@ -15,12 +15,17 @@ PART_SIZES=
 PART_LABELS=
 #PART_SIZES=1G
 #PART_LABELS=metrics r00ki_bluestore
-# 2 CPUs starve Ceph: OSD liveness probes time out under fio/warp load and the OSDs
-# flap. Override both when running service+consumer side by side - two VMs at this size
-# oversubscribe an 8 core host.
+# Sizing for the clusters that run OSDs (aio, service). 2 CPUs starve Ceph here: OSD
+# liveness probes time out under fio/warp load and the OSDs flap.
 MINIKUBE_CPUS?=4
 MINIKUBE_MEMORY?=8g
-MINIKUBE_COMMON_START_ARGS=--container-runtime=containerd --cpus=$(MINIKUBE_CPUS) --memory=$(MINIKUBE_MEMORY) --driver=kvm2 --network=default
+# The consumer cluster has no OSDs - its CephCluster is external, and its
+# kube-prometheus-stack runs without node-exporter/kube-state-metrics/Grafana. It only
+# hosts the CSI drivers, operators and Velero, so it fits in a VM half this size. That
+# keeps service+consumer side by side within an 8 core host.
+MINIKUBE_CONSUMER_CPUS?=2
+MINIKUBE_CONSUMER_MEMORY?=6g
+MINIKUBE_COMMON_START_ARGS=--container-runtime=containerd --driver=kvm2 --network=default
 # --wait=all -cni=cilium
 # OLM Addon unsuprisingly ... broken
 # MINIKUBE_COMMON_ADDONS=metrics-server olm
@@ -28,7 +33,8 @@ MINIKUBE_COMMON_START_ARGS=--container-runtime=containerd --cpus=$(MINIKUBE_CPUS
 # reason: ImagePullBackOff
 MINIKUBE_COMMON_ADDONS=metrics-server
 # Any amount of disks works in general
-MINIKUBE_SERVICE_START_ARGS=$(MINIKUBE_COMMON_START_ARGS) --disk-size=40g --extra-disks=3
+MINIKUBE_SERVICE_START_ARGS=$(MINIKUBE_COMMON_START_ARGS) --cpus=$(MINIKUBE_CPUS) --memory=$(MINIKUBE_MEMORY) --disk-size=40g --extra-disks=3
+MINIKUBE_CONSUMER_START_ARGS=$(MINIKUBE_COMMON_START_ARGS) --cpus=$(MINIKUBE_CONSUMER_CPUS) --memory=$(MINIKUBE_CONSUMER_MEMORY)
 # wave=2 : Ensures operator is not removed, so it can take down everything else only 
 
 HELMFILE_COMMON_ARGS=--concurrency 1 
@@ -94,7 +100,7 @@ apply-r00ki-service: ## Apply Ceph Service Cluster
 
 .PHONY: apply-r00ki-consumer
 apply-r00ki-consumer: ## Apply Ceph Consumer Cluster
-	minikube $(MINIKUBE_COMMON_START_ARGS) --profile $(PROFILE_PREFIX)-$(ENV_CONSUMER) start
+	minikube $(MINIKUBE_CONSUMER_START_ARGS) --profile $(PROFILE_PREFIX)-$(ENV_CONSUMER) start
 	if [ -n "$${PATCH_REGISTRY_MIRROR}" ] ; then make ENV=$(ENV_CONSUMER) patch-registry-mirror ; fi
 	for addon in $(MINIKUBE_COMMON_ADDONS) ; do minikube --profile $(PROFILE_PREFIX)-$(ENV_CONSUMER) addons enable $${addon} ; done
 	minikube --profile $(PROFILE_PREFIX)-$(ENV_CONSUMER) addons enable volumesnapshots
