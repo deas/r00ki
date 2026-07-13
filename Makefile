@@ -15,7 +15,12 @@ PART_SIZES=
 PART_LABELS=
 #PART_SIZES=1G
 #PART_LABELS=metrics r00ki_bluestore
-MINIKUBE_COMMON_START_ARGS=--container-runtime=containerd --cpus=2 --driver=kvm2 --network=default
+# 2 CPUs starve Ceph: OSD liveness probes time out under fio/warp load and the OSDs
+# flap. Override both when running service+consumer side by side - two VMs at this size
+# oversubscribe an 8 core host.
+MINIKUBE_CPUS?=4
+MINIKUBE_MEMORY?=8g
+MINIKUBE_COMMON_START_ARGS=--container-runtime=containerd --cpus=$(MINIKUBE_CPUS) --memory=$(MINIKUBE_MEMORY) --driver=kvm2 --network=default
 # --wait=all -cni=cilium
 # OLM Addon unsuprisingly ... broken
 # MINIKUBE_COMMON_ADDONS=metrics-server olm
@@ -25,10 +30,16 @@ MINIKUBE_COMMON_ADDONS=metrics-server
 # Any amount of disks works in general
 MINIKUBE_SERVICE_START_ARGS=$(MINIKUBE_COMMON_START_ARGS) --disk-size=40g --extra-disks=3
 # wave=2 : Ensures operator is not removed, so it can take down everything else only 
+
+HELMFILE_COMMON_ARGS=--concurrency 1 
+# HELMFILE_COMMON_ARGS=--concurrency 1 --debug
+# -f helmfile.yaml
 HELMFILE_DESTROY_EXTRA_ARGS=--selector wave=2
+
 # TODO: MANIFEST_DYNAMIC duplicated in helmfile
 MANIFEST_DYNAMIC_PATH=apps/rook-ceph-cluster-external/files
 MANIFEST_DYNAMIC=$(MANIFEST_DYNAMIC_PATH)/manifest-dynamic.yaml
+
 # TODO: Beware of the k8s contexts!
 .DEFAULT_GOAL := help
 
@@ -38,18 +49,13 @@ help:  ## Display this help
 	@awk 'BEGIN {FS = ":.*##"; printf "\nUsage:\n  make \033[36m<target>\033[0m\n"} /^[a-zA-Z_0-9-]+:.*?##/ { printf "  \033[36m%-20s\033[0m %s\n", $$1, $$2 } /^##@/ { printf "\n\033[1m%s\033[0m\n", substr($$0, 5) } ' $(MAKEFILE_LIST)
 
 
-.PHONY: apply-apps 
+.PHONY: apply-apps
 apply-apps: ## Apply Apps
-	if [ "$(APPS_ENV)" = "mini-$(ENV_SERVICE)" ] ; then \
-		$(TOOLS_DIR)/kvm-helm-hack-apply-crds.sh; \
-	else \
-		$(TOOLS_DIR)/kvm-helm-hack-apply-crds.sh velero; \
-	fi
-	helmfile sync --concurrency 0 --environment $(APPS_ENV)
+	helmfile sync $(HELMFILE_COMMON_ARGS) --environment $(APPS_ENV)
 
 .PHONY: destroy-apps
 destroy-apps: ## Destroy Apps
-	 helmfile destroy --concurrency 0 --environment $(APPS_ENV) $(HELMFILE_DESTROY_EXTRA_ARGS) # HELMFILE_DESTROY_EXTRA_ARGS
+	 helmfile destroy $(HELMFILE_COMMON_ARGS) --environment $(APPS_ENV) $(HELMFILE_DESTROY_EXTRA_ARGS) # HELMFILE_DESTROY_EXTRA_ARGS
 
 .PHONY: patch-registry-mirror
 patch-registry-mirror: ## Patch containerd registry mirror
@@ -58,9 +64,17 @@ patch-registry-mirror: ## Patch containerd registry mirror
 		ssh -o "StrictHostKeyChecking=no" -i $$(minikube --profile $(PROFILE_PREFIX)-$(ENV) ssh-key) docker@$$(minikube --profile $(PROFILE_PREFIX)-$(ENV) ip) \
 		'chmod 755 patch-containerd.sh && sudo $${HOME}/patch-containerd.sh && sudo systemctl restart containerd && while [ ! -e /run/containerd/containerd.sock ]; do sleep 1; done'
 
+.PHONY: generate-blkdv-pvs
+generate-blkdv-pvs: ## Generate block device PVs
+	cat $(TOOLS_DIR)/blkdev-pvs.sh | \
+		ssh -o "StrictHostKeyChecking=no" -i $$(minikube --profile $(PROFILE_PREFIX)-$(ENV) ssh-key) docker@$$(minikube --profile $(PROFILE_PREFIX)-$(ENV) ip) \
+		'bash -' | kubectl apply -f -
+
 .PHONY: apply-r00ki-aio
 apply-r00ki-aio: ## Apply Ceph Service Cluster
-	minikube $(MINIKUBE_SERVICE_START_ARGS) --profile $(PROFILE_PREFIX)-$(ENV_AIO) start
+#    --wait=[apiserver,system_pods]:
+#        comma separated list of Kubernetes components to verify and wait for after starting a cluster. defaults to "apiserver,system_pods", available options: "apiserver,system_pods,default_sa,apps_running,node_ready,kubelet" . other acceptable values are 'all' or 'none', 'true' and 'false'
+	minikube $(MINIKUBE_SERVICE_START_ARGS) --profile $(PROFILE_PREFIX)-$(ENV_AIO) start --wait=all
 	if [ -n "$${PATCH_REGISTRY_MIRROR}" ] ; then make ENV=$(ENV_AIO) patch-registry-mirror ; fi
 	[ -z "$(PART_LABELS)" ] || cat $(TOOLS_DIR)/prepare-disks.sh \
 		| sed -e s,^PART_LABELS=.*,PART_LABELS="\"$(PART_LABELS)\"",g \
@@ -68,7 +82,7 @@ apply-r00ki-aio: ## Apply Ceph Service Cluster
 		| ssh -o "StrictHostKeyChecking=no" -i $$(minikube --profile $(PROFILE_PREFIX)-$(ENV_AIO) ssh-key) docker@$$(minikube --profile $(PROFILE_PREFIX)-$(ENV_AIO) ip) sudo bash
 	for addon in $(MINIKUBE_COMMON_ADDONS) ; do minikube --profile $(PROFILE_PREFIX)-$(ENV_AIO) addons enable $${addon} ; done
 	minikube --profile $(PROFILE_PREFIX)-$(ENV_AIO) addons enable volumesnapshots
-	# kubectl api-versions # Wipe discovery cache / helm CRD workaround
+	make ENV=$(ENV_AIO) generate-blkdv-pvs
 	make APPS_ENV=mini-$(ENV_AIO) apply-apps
 
 .PHONY: apply-r00ki-service

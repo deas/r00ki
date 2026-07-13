@@ -12,8 +12,10 @@ spec:
   name: {{ .name }}
   source: {{ .source }}
   sourceNamespace: {{ .sourceNamespace  }}
+  {{- with .config }}
   config:
-    {{- toYaml .config | nindent 4 }}
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
 # TODO: Beware: openshift-marketplace exists in okd
 #---
 #{{- if and (ne .namespace $.Values.operatorsNamespace) .namespace }}

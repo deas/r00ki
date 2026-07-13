@@ -22,9 +22,12 @@ configOverride:
 
 resources:
 
+# A service cluster serves Ceph but never mounts it, so it needs no CSI drivers.
+# As of Rook 1.20 the csi.enable{Rbd,Cephfs}Driver toggles are gone; skipping the
+# ceph-csi-operator subchart entirely is the equivalent. The consumer cluster runs
+# its own csi-operator plus the ceph-csi-drivers chart.
 csi:
-  enableRbdDriver: false
-  enableCephfsDriver: false
+  installCsiOperator: false
 
 # -- Global log level for the operator.
 # Options: `ERROR`, `WARNING`, `INFO`, `DEBUG`

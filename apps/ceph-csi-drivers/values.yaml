@@ -1,0 +1,41 @@
+# Rook-compatible values for the ceph-csi-drivers chart.
+# Seeded from https://raw.githubusercontent.com/rook/rook/v1.20.2/deploy/charts/ceph-csi-drivers/values.yaml
+#
+# Rook 1.20 no longer deploys the CSI drivers; the ceph-csi-operator (a subchart of
+# rook-ceph, gated on csi.installCsiOperator) reconciles the Driver CRs created here.
+# The chart's own defaults are NOT usable with Rook -- the driver names must match the
+# provisioner names Rook writes into StorageClasses and VolumeSnapshotClasses, which
+# encode the operator namespace.
+
+operatorConfig:
+  namespace: rook-ceph # namespace:operator
+  driverSpecDefaults:
+    # Image versions come from the configmap the rook-ceph chart renders from its csi.* image tags.
+    imageSet:
+      name: rook-csi-operator-image-set-configmap
+    nodePlugin:
+      priorityClassName: system-node-critical
+    controllerPlugin:
+      priorityClassName: system-cluster-critical
+
+drivers:
+  rbd:
+    enabled: true
+    name: rook-ceph.rbd.csi.ceph.com # csi-provisioner-name
+    # The chart defaults rbd (and nvmeof) to snapshotPolicy "none", while cephfs/nfs get
+    # "volumeSnapshot" -- so the RBD controller plugin comes up with no csi-snapshotter
+    # sidecar and every RBD snapshot fails. Rook's own values-for-rook file does not
+    # override this. Pre-1.20 the operator chart enabled the RBD snapshotter by default
+    # (csi.enableRBDSnapshotter), and we need it for cephBlockPoolsVolumeSnapshotClass,
+    # `make test-csi-snapshot`, and Velero's CSI snapshot data movement.
+    snapshotPolicy: volumeSnapshot
+  cephfs:
+    enabled: true
+    name: rook-ceph.cephfs.csi.ceph.com # csi-provisioner-name
+    snapshotPolicy: volumeSnapshot
+  nfs:
+    enabled: false
+    name: rook-ceph.nfs.csi.ceph.com # csi-provisioner-name
+  nvmeof:
+    enabled: false
+    name: rook-ceph.nvmeof.csi.ceph.com # csi-provisioner-name

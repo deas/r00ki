@@ -128,7 +128,20 @@ function importClusterID() {
   fi
 }
 
+# Rook 1.18+ can rotate cephx keys. When CEPHX_KEY_GENERATION is a non-zero generation,
+# create-external-cluster-resources.py names the ceph users "<name>.<generation>", and the
+# consumer-side secrets must carry that suffixed name or auth fails.
+function getUserId() {
+  id="$1"
+  if [ -z "$CEPHX_KEY_GENERATION" ] || [ "$CEPHX_KEY_GENERATION" == 0 ]; then
+    echo "$id"
+  else
+    echo "$id.$CEPHX_KEY_GENERATION"
+  fi
+}
+
 function importSecret() {
+  userID=$(getUserId "$ROOK_EXTERNAL_USERNAME")
   $KUBECTL -n "$NAMESPACE" \
     ${CREATE} \
     secret \
@@ -139,7 +152,7 @@ function importSecret() {
     --from-literal="$MON_SECRET_FSID_KEYNAME"="$ROOK_EXTERNAL_FSID" \
     --from-literal="$MON_SECRET_ADMIN_KEYRING_KEYNAME"="$ROOK_EXTERNAL_ADMIN_SECRET" \
     --from-literal="$MON_SECRET_MON_KEYRING_KEYNAME"="$ROOK_EXTERNAL_MONITOR_SECRET" \
-    --from-literal="$MON_SECRET_CEPH_USERNAME_KEYNAME"="$ROOK_EXTERNAL_USERNAME" \
+    --from-literal="$MON_SECRET_CEPH_USERNAME_KEYNAME"="$userID" \
     --from-literal="$MON_SECRET_CEPH_SECRET_KEYNAME"="$ROOK_EXTERNAL_USER_SECRET"
   echo "---"
 }
@@ -165,50 +178,56 @@ function createInputCommadConfigMap() {
 }
 
 function importCsiRBDNodeSecret() {
+  userID=$(getUserId "$CSI_RBD_NODE_SECRET_NAME")
   $KUBECTL -n "$NAMESPACE" \
     ${CREATE} \
     secret \
     generic \
     --type="kubernetes.io/rook" \
     "rook-""$CSI_RBD_NODE_SECRET_NAME" \
-    --from-literal=userID="$CSI_RBD_NODE_SECRET_NAME" \
+    --from-literal=userID="$userID" \
     --from-literal=userKey="$CSI_RBD_NODE_SECRET"
   echo "---"
 }
 
 function importCsiRBDProvisionerSecret() {
+  userID=$(getUserId "$CSI_RBD_PROVISIONER_SECRET_NAME")
   $KUBECTL -n "$NAMESPACE" \
     ${CREATE} \
     secret \
     generic \
     --type="kubernetes.io/rook" \
     "rook-""$CSI_RBD_PROVISIONER_SECRET_NAME" \
-    --from-literal=userID="$CSI_RBD_PROVISIONER_SECRET_NAME" \
+    --from-literal=userID="$userID" \
     --from-literal=userKey="$CSI_RBD_PROVISIONER_SECRET"
   echo "---"
 }
 
+# Rook 1.20 renamed the CephFS CSI secret keys from adminID/adminKey to userID/userKey,
+# matching the RBD secrets. Emitting the old keys yields a secret ceph-csi cannot read.
 function importCsiCephFSNodeSecret() {
+  userID=$(getUserId "$CSI_CEPHFS_NODE_SECRET_NAME")
   $KUBECTL -n "$NAMESPACE" \
     ${CREATE} \
     secret \
     generic \
     --type="kubernetes.io/rook" \
     "rook-""$CSI_CEPHFS_NODE_SECRET_NAME" \
-    --from-literal=adminID="$CSI_CEPHFS_NODE_SECRET_NAME" \
-    --from-literal=adminKey="$CSI_CEPHFS_NODE_SECRET"
+    --from-literal=userID="$userID" \
+    --from-literal=userKey="$CSI_CEPHFS_NODE_SECRET"
   echo "---"
 }
 
 function importCsiCephFSProvisionerSecret() {
+  userID=$(getUserId "$CSI_CEPHFS_PROVISIONER_SECRET_NAME")
   $KUBECTL -n "$NAMESPACE" \
     ${CREATE} \
     secret \
     generic \
     --type="kubernetes.io/rook" \
     "rook-""$CSI_CEPHFS_PROVISIONER_SECRET_NAME" \
-    --from-literal=adminID="$CSI_CEPHFS_PROVISIONER_SECRET_NAME" \
-    --from-literal=adminKey="$CSI_CEPHFS_PROVISIONER_SECRET"
+    --from-literal=userID="$userID" \
+    --from-literal=userKey="$CSI_CEPHFS_PROVISIONER_SECRET"
   echo "---"
 }
 
@@ -241,6 +260,8 @@ parameters:
   csi.storage.k8s.io/provisioner-secret-namespace: $NAMESPACE
   csi.storage.k8s.io/controller-expand-secret-name:  "rook-$CSI_RBD_PROVISIONER_SECRET_NAME"
   csi.storage.k8s.io/controller-expand-secret-namespace: $NAMESPACE
+  csi.storage.k8s.io/controller-publish-secret-name: "rook-$CSI_RBD_PROVISIONER_SECRET_NAME"
+  csi.storage.k8s.io/controller-publish-secret-namespace: $NAMESPACE
   csi.storage.k8s.io/node-stage-secret-name: "rook-$CSI_RBD_NODE_SECRET_NAME"
   csi.storage.k8s.io/node-stage-secret-namespace: $NAMESPACE
   csi.storage.k8s.io/fstype: ext4
@@ -266,6 +287,8 @@ parameters:
   csi.storage.k8s.io/provisioner-secret-namespace: $NAMESPACE
   csi.storage.k8s.io/controller-expand-secret-name:  "rook-$CSI_RBD_PROVISIONER_SECRET_NAME"
   csi.storage.k8s.io/controller-expand-secret-namespace: $NAMESPACE
+  csi.storage.k8s.io/controller-publish-secret-name: "rook-$CSI_RBD_PROVISIONER_SECRET_NAME"
+  csi.storage.k8s.io/controller-publish-secret-namespace: $NAMESPACE
   csi.storage.k8s.io/node-stage-secret-name: "rook-$CSI_RBD_NODE_SECRET_NAME"
   csi.storage.k8s.io/node-stage-secret-namespace: $NAMESPACE
   csi.storage.k8s.io/fstype: ext4
@@ -318,6 +341,8 @@ parameters:
   csi.storage.k8s.io/provisioner-secret-namespace: $NAMESPACE
   csi.storage.k8s.io/controller-expand-secret-name:  "rook-$CSI_RBD_PROVISIONER_SECRET_NAME"
   csi.storage.k8s.io/controller-expand-secret-namespace: $NAMESPACE
+  csi.storage.k8s.io/controller-publish-secret-name: "rook-$CSI_RBD_PROVISIONER_SECRET_NAME"
+  csi.storage.k8s.io/controller-publish-secret-namespace: $NAMESPACE
   csi.storage.k8s.io/node-stage-secret-name: "rook-$CSI_RBD_NODE_SECRET_NAME"
   csi.storage.k8s.io/node-stage-secret-namespace: $NAMESPACE
   csi.storage.k8s.io/fstype: ext4
@@ -343,6 +368,8 @@ parameters:
   csi.storage.k8s.io/provisioner-secret-namespace: $NAMESPACE
   csi.storage.k8s.io/controller-expand-secret-name: "rook-$CSI_CEPHFS_PROVISIONER_SECRET_NAME"
   csi.storage.k8s.io/controller-expand-secret-namespace: $NAMESPACE
+  csi.storage.k8s.io/controller-publish-secret-name: "rook-$CSI_CEPHFS_PROVISIONER_SECRET_NAME"
+  csi.storage.k8s.io/controller-publish-secret-namespace: $NAMESPACE
   csi.storage.k8s.io/node-stage-secret-name: "rook-$CSI_CEPHFS_NODE_SECRET_NAME"
   csi.storage.k8s.io/node-stage-secret-namespace: $NAMESPACE
 allowVolumeExpansion: true

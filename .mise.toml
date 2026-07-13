@@ -1,0 +1,5 @@
+[tools]
+# helmfile >= 1.0 is required to drive helm 4 (helm 4 dropped `helm version --client`,
+# which helmfile 0.x probes on startup).
+helm = "4.1.1"
+helmfile = "1.7.0"

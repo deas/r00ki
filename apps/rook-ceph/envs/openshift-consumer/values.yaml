@@ -31,20 +31,14 @@ monitoring:
   # Enabling will also create RBAC rules to allow Operator to create ServiceMonitors
   enabled: true
 
+# Ceph-CSI is managed by the ceph-csi-operator subchart as of Rook 1.17. The old
+# csi.* tuning keys (enableLiveness, enableGrpcMetrics, csi*Resource, enable*Driver,
+# cephFSKernelMountOptions, ...) no longer exist in this chart, and because the chart
+# ships no values.schema.json they would be silently ignored rather than rejected.
+# Per-driver settings now live in the ceph-csi-operator OperatorConfig/Driver CRs.
 csi:
-  #  # -- Set CephFS Kernel mount options to use https://docs.ceph.com/en/latest/man/8/mount.ceph/#options.
-  # # Set to "ms_mode=secure" when connections.encrypted is enabled in CephCluster CR
-  #  cephFSKernelMountOptions: "ms_mode=crc"
+  # -- Install the ceph-csi-operator subchart, which deploys the RBD/CephFS drivers.
+  installCsiOperator: true
   serviceMonitor:
-    # -- Enable ServiceMonitor for Ceph CSI drivers
+    # -- Enable ServiceMonitor for CSI metrics
     enabled: true
-
-  # csiRBDProvisionerResource:
-  # csiRBDPluginResource:
-  # csiCephFSProvisionerResource:
-  # csiCephFSPluginResource:
-  # csiNFSProvisionerResource:
-  # csiNFSPluginResource:
-
-  enableLiveness: true
-  enableGrpcMetrics: true

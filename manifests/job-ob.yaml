@@ -2,6 +2,10 @@ apiVersion: batch/v1
 kind: Job
 metadata:
   name: ob
+  # The ObjectBucketClaim is created in rook-ceph, so the BUCKET_* configmap and the
+  # credentials secret the container reads below are provisioned there. Without this the
+  # job lands in `default` and never starts ("configmap my-store not found").
+  namespace: rook-ceph
 spec:
   template:
     spec:

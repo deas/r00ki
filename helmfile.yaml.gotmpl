@@ -1,16 +1,22 @@
 repositories:
 - name: rook-release
-  url: https://charts.rook.io/release 
+  url: https://charts.rook.io/release
 - name: vmware-tanzu
   url: https://vmware-tanzu.github.io/helm-charts
 - name: prometheus-community
   url: https://prometheus-community.github.io/helm-charts
+# Rook 1.20 no longer deploys the CSI drivers itself; the ceph-csi-operator does.
+# The operator ships as a subchart of rook-ceph, but the Driver CRs come from this repo.
+- name: ceph-csi
+  url: https://ceph.github.io/ceph-csi-operator
 
-# Waiting does not help with the kvm2/minikube/helm crd timing issue
-#helmDefaults:
-#  #syncArgs:
-#  #- "--wait"
-#  wait: true
+# Helm 4 applies server-side. OLM writes into the packageserver CSV's
+# .spec.install.spec.deployments, so it co-owns fields the olm chart also sets, and a
+# re-sync fails with a field-manager conflict. Helm 3's client-side apply always
+# overwrote those fields; --force-conflicts restores that behaviour under SSA.
+helmDefaults:
+  syncArgs:
+  - "--force-conflicts"
 
 # https://github.com/roboll/helmfile/issues/1247
 environments:
@@ -80,12 +86,14 @@ environments:
 #- defaults.yaml
 #- templates.yaml
 
+# helmfile >= 1.0 requires environments and releases in separate YAML parts.
+---
 releases:
 {{- if not .Environment.Values.openshift }}
   - name: olm
     chart: oci://ghcr.io/cloudtooling/helm-charts/olm
     namespace: default
-    version: 0.30.0
+    version: 0.45.0
     values:
     - apps/olm/values.yaml
 {{- end }}
@@ -105,7 +113,7 @@ releases:
 {{- end }}
   - name: rook-ceph
     chart: rook-release/rook-ceph
-    version: ~1.16.0
+    version: ~1.20.2
     namespace: rook-ceph 
     createNamespace: true
     values:
@@ -115,9 +123,26 @@ releases:
     needs:
     - openshift-user-workload-monitoring/kube-prometheus-stack
 {{- end}}
+{{- if (index .Environment.Values "rook-ceph-cluster-external").enabled }}
+  # Rook 1.20 removed CSI driver deployment from the operator: the operator ships the
+  # ceph-csi-operator as a subchart, but the Driver CRs it reconciles come from this
+  # chart. Without it, no volume ever mounts. Only clusters that *consume* Ceph via CSI
+  # need it, which is exactly the set that enables rook-ceph-cluster-external.
+  # wave=2 so `destroy-apps` removes the Driver CRs while the csi-operator is still up.
+  - name: ceph-csi-drivers
+    chart: ceph-csi/ceph-csi-drivers
+    version: ~1.0.4
+    namespace: rook-ceph
+    values:
+    - apps/{{`{{ .Release.Name }}`}}/values.yaml
+    needs:
+    - rook-ceph/rook-ceph
+    labels:
+      wave: 2
+{{- end }}
   - name: rook-ceph-cluster
     chart: rook-release/rook-ceph-cluster
-    version: ~1.16.0
+    version: ~1.20.2
     namespace: rook-ceph
     values:
     - apps/{{`{{ .Release.Name }}`}}/envs/{{`{{ .Environment.Name }}`}}/values.yaml
@@ -133,7 +158,7 @@ releases:
       # TODO:: Wait for resources, run ./setup-rbd.sh or ./export-config.sh (aio or external)
       # command: "echo"
       command: "sh" # prepare-consumer.sh"
-      args: ["-c", "MANIFEST_DYNAMIC_PATH=apps/rook-ceph-cluster-external/files /tools/prepare-consumer.sh {{ splitList "-" .Environment.Name | last }}"]
+      args: ["-c", "MANIFEST_DYNAMIC_PATH=apps/rook-ceph-cluster-external/files ./tools/prepare-consumer.sh {{ splitList "-" .Environment.Name | last }}"]
       # args: ["{{`{{.Environment.Name}}`}}", "{{`{{.Release.Name}}`}}", "{{`{{.HelmfileCommand}}`}}"]
 {{- end }}
 {{- if (index .Environment.Values "rook-ceph-cluster-external").enabled }}
@@ -176,6 +201,7 @@ releases:
 {{- if .Environment.Values.velero.enabled }}
   - name: velero
     chart: vmware-tanzu/velero
+    version: ~12.1.0
     namespace: velero
     values:
     - apps/{{`{{ .Release.Name }}`}}/values.yaml
@@ -188,7 +214,7 @@ releases:
 {{- if not .Environment.Values.openshift }}
   - name: kube-prometheus-stack
     chart: prometheus-community/kube-prometheus-stack
-    version: ~67.4.0
+    version: ~87.15.1
     namespace: openshift-user-workload-monitoring
     values:
     - apps/{{`{{ .Release.Name }}`}}/envs/default/values.yaml

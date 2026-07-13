@@ -1,3 +1,11 @@
+# Ceph image. As of Rook 1.19 the rook-ceph-cluster chart renders cephClusterSpec.cephVersion
+# from this top-level block, so cephVersion must NOT also be set in cephClusterSpec below --
+# both would render and collide. Tentacle (v20) is supported, so allowUnsupported is off.
+cephImage:
+  repository: quay.io/ceph/ceph
+  tag: v20.2.2
+  allowUnsupported: false
+
 # All values below are taken from the CephCluster CRD
 # -- Cluster configuration.
 # @default -- See [below](#ceph-cluster-spec)
@@ -6,9 +14,6 @@ cephClusterSpec:
   #  provider: host
   dataDirHostPath: /mnt/vda1/var/lib/rook # /var/lib/rook
   resources:
-  cephVersion:
-    # image: quay.io/ceph/ceph:v19
-    allowUnsupported: true
   mon:
     count: 1
     allowMultiplePerNode: true
@@ -25,15 +30,38 @@ cephClusterSpec:
   crashCollector:
     disable: true
   storage:
-    useAllNodes: true
-    #useAllDevices: true
-    allowDeviceClassUpdate: true
-    allowOsdCrushWeightUpdate: false
-    #useAllDevices: false
-    #devicePathFilter: /dev/disk/by-partlabel/rook-.*
-    #deviceFilter:
-    #config:
-    #  deviceClass: testclass
+    # The chart defaults these to true. Left alone they add a second, node-level
+    # OSD provisioning path that races the device set below for the very same
+    # raw disks (the PVs under storageClassName: manual are /dev/vd[bcd]).
+    useAllNodes: false
+    useAllDevices: false
+    storageClassDeviceSets:
+      - name: set1
+        count: 3
+        #portable: false
+        #encrypted: false
+        volumeClaimTemplates:
+          - metadata:
+              name: data
+            spec:
+              resources:
+                requests:
+                  storage: 40Gi
+              storageClassName: manual
+              volumeMode: Block
+              accessModes:
+                - ReadWriteOnce
+    # onlyApplyOSDPlacement: false
+  #storage:
+  #  useAllNodes: true
+  #  #useAllDevices: true
+  # allowDeviceClassUpdate: true
+  # allowOsdCrushWeightUpdate: false
+  # #useAllDevices: false
+  # #devicePathFilter: /dev/disk/by-partlabel/rook-.*
+  # #deviceFilter:
+  # #config:
+  # #  deviceClass: testclass
   monitoring:
     enabled: true
   healthCheck:

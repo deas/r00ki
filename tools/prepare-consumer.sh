@@ -8,6 +8,9 @@ FS=myfs
 POOL=replicapool
 : "${INI_FILE:="config.ini"}"
 : "${MANIFEST_DYNAMIC_PATH:="apps/rook-ceph-cluster-external/files"}"
+# On a cold cluster this waits out the Ceph image pulls and OSD provisioning, which
+# take well over 4m on a 2-CPU minikube VM.
+: "${WAIT_TIMEOUT:="900s"}"
 
 MANIFEST_DYNAMIC="${MANIFEST_DYNAMIC_PATH}/manifest-dynamic.yaml"
 
@@ -20,12 +23,12 @@ ENV_TYPE=$1
 # TODO: Beware of the k8s contexts!
 
 # Alternatively, we could do the waiting in a helm job
-kubectl -n ${ROOK_CLUSTER_NS} wait --timeout=240s --for=jsonpath='{.status.phase}'=Ready cephblockpool/${POOL}
-kubectl -n ${ROOK_CLUSTER_NS} wait --timeout=240s --for=jsonpath='{.status.phase}'=Ready cephobjectstore/${STORE}
+kubectl -n ${ROOK_CLUSTER_NS} wait --timeout=${WAIT_TIMEOUT} --for=jsonpath='{.status.phase}'=Ready cephblockpool/${POOL}
+kubectl -n ${ROOK_CLUSTER_NS} wait --timeout=${WAIT_TIMEOUT} --for=jsonpath='{.status.phase}'=Ready cephobjectstore/${STORE}
 # Have to wait for the external address of the endpoint - which does not appear to be covered by the store being ready
-kubectl -n ${ROOK_CLUSTER_NS} wait --timeout=240s --for=jsonpath='{.subsets[0].addresses[0].ip}' ep/rook-ceph-rgw-my-store
-kubectl -n ${ROOK_CLUSTER_NS} wait --timeout=240s --for=jsonpath='{.status.phase}'=Ready cephfilesystem/${FS}
-# kubectl -n ${ROOK_CLUSTER_NS} wait --timeout=240s --for=jsonpath='{.subsets[0].addresses[0].nodeName}'=${NODENAME} ep/rook-ceph-rgw-${STORE}
+kubectl -n ${ROOK_CLUSTER_NS} wait --timeout=${WAIT_TIMEOUT} --for=jsonpath='{.subsets[0].addresses[0].ip}' ep/rook-ceph-rgw-my-store
+kubectl -n ${ROOK_CLUSTER_NS} wait --timeout=${WAIT_TIMEOUT} --for=jsonpath='{.status.phase}'=Ready cephfilesystem/${FS}
+# kubectl -n ${ROOK_CLUSTER_NS} wait --timeout=${WAIT_TIMEOUT} --for=jsonpath='{.subsets[0].addresses[0].nodeName}'=${NODENAME} ep/rook-ceph-rgw-${STORE}
 
 # echo ${ENV_TYPE}
 

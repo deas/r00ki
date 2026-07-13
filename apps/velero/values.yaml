@@ -1,6 +1,8 @@
 initContainers:
+  # The plugin is versioned against velero itself: v1.14.x pairs with velero 1.18.x.
+  # (The chart's own values.yaml example lags; trust the plugin's compatibility matrix.)
   - name: velero-plugin-for-aws
-    image: velero/velero-plugin-for-aws:v1.11.0
+    image: velero/velero-plugin-for-aws:v1.14.2
     volumeMounts:
       - mountPath: /target
         name: plugins
